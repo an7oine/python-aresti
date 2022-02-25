@@ -77,7 +77,7 @@ class AsynkroninenYhteys:
       self.data = data
       # def __init__
     def __str__(self):
-      return pprint.pformat(self.data)
+      return f'HTTP {self.status}: {pprint.pformat(self.data)}'
     # class Poikkeus
 
   async def poikkeus(self, sanoma):
