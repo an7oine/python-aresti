@@ -30,7 +30,8 @@ def mittaa(f):
   async def _f(*args, **kwargs):
     alku = time()
     tulos = await f(*args, **kwargs)
-    print(f'{f.__name__} {args[1]} kesti {time() - alku:.1f} s')
+    kesto = f'{time() - alku:.1f}'.replace('.', ',')
+    print(f'{f.__name__} {args[1]} kesti {kesto} s')
     return tulos
   return _f
   # def mittaa
@@ -256,9 +257,13 @@ class RestYhteys(AsynkroninenYhteys):
     if sanoma.status >= 400:
       raise await self.poikkeus(sanoma)
     if metodi in ('GET', 'POST', 'PATCH'):
-      return await sanoma.json()
+      try:
+        return await sanoma.json()
+      except:
+        return None
     else:
       return await super()._tulkitse_sanoma(metodi, sanoma)
+    # async def _tulkitse_sanoma
 
   async def lisaa_data(self, polku, data, **kwargs):
     return await super().lisaa_data(
