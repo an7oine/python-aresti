@@ -15,6 +15,7 @@
 # @license     All rights reserved
 #============================================================================
 
+from dataclasses import fields
 import functools
 import json
 import pprint
@@ -311,3 +312,94 @@ class RestYhteys(AsynkroninenYhteys):
     # async def nouda_sivutettu_data
 
   # class RestYhteys
+
+
+@type.__call__
+class ei_syotetty:
+  ''' Arvo, jota ei syötetty. Käyttäytyy kuten ei olisikaan. '''
+  # pylint: disable=invalid-name
+  EI_SYOTETTY = None
+  def __new__(cls):
+    if cls.EI_SYOTETTY is None:
+      cls.EI_SYOTETTY = super().__new__(cls)
+    return cls.EI_SYOTETTY
+  def __mul__(self, arg):
+    return self
+  def __bool__(self):
+    return False
+  def __or__(self, arg):
+    return arg
+  def __and__(self, arg):
+    return False
+  def __not__(self):
+    return True
+  def __iter__(self):
+    return ().__iter__()
+  def __repr__(self):
+    return '<ei syötetty>'
+  # class ei_syotetty
+
+
+class RestSanoma:
+  '''
+  Dataclass-sanomaluokan saate, joka sisältää:
+  - muunnostaulukon `_rest`, sekä metodit
+  - lähtevän sanoman (`self`) muuntamiseen REST-sanakirjaksi ja
+  - saapuvan REST-sanakirjan muuntamiseen `cls`-sanomaksi
+  '''
+
+  # Muunnostaulukko, jonka rivit ovat jompaa kumpaa seuraavaa tyyppiä:
+  # <sanoma-avain>: (
+  #   <rest-avain>, lambda lahteva: <...>, lambda saapuva: <...>
+  # )
+  # <sanoma-avain>: <rest-avain>
+  _rest = {}
+
+  def lahteva(self):
+    '''
+    Muunnetaan self-sanoman sisältö REST-sanakirjaksi
+    `self._rest`-muunnostaulun mukaisesti.
+    '''
+    return {
+      muunnettu_avain: muunnos(arvo)
+      for arvo, muunnettu_avain, muunnos in (
+        (arvo, rest[0], rest[1])
+        if isinstance(rest, tuple)
+        else (arvo, rest, lambda x: x)
+        for arvo, rest in (
+          (arvo, self._rest.get(avain, avain))
+          for avain, arvo in (
+            (kentta.name, getattr(self, kentta.name))
+            for kentta in fields(self)
+          )
+          if arvo is not ei_syotetty
+        )
+      )
+    }
+    # def lahteva
+
+  @classmethod
+  def saapuva(cls, saapuva):
+    '''
+    Muunnetaan saapuvan REST-sanakirjan sisältö `cls`-olioksi
+    `cls._rest`-muunnostaulun mukaisesti.
+    '''
+    return cls(**{
+      avain: muunnos(saapuva[muunnettu_avain])
+      for avain, muunnettu_avain, muunnos in (
+        (avain, rest[0], rest[2])
+        if isinstance(rest, tuple)
+        else (avain, rest, lambda x: x)
+        for avain, rest in (
+          (avain, cls._rest.get(avain, avain))
+          for avain in (
+            kentta.name
+            for kentta in fields(cls)
+          )
+        )
+      )
+      if muunnettu_avain in saapuva
+    })
+    # def saapuva
+
+  # class RestSanoma
