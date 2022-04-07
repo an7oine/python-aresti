@@ -92,6 +92,7 @@ class AsynkroninenYhteys:
     # async def poikkeus
 
   def pyynnon_otsakkeet(self, **kwargs):
+    # pylint: disable=unused-argument
     return {}
 
   def _pyynnon_otsakkeet(self, **kwargs):
@@ -194,7 +195,8 @@ class RestYhteys(AsynkroninenYhteys):
   '''
   REST-yhteys.
 
-  Tunnistautuminen `avaimen` avulla: `Authorization: Token xxx`.
+  Tunnistautuminen `avaimen` avulla: lisätään otsake
+  `Authorization: Token xxx`, mikäli `avain` on annettu.
 
   Saapuvaa ja lähtevää dataa sekä palvelimen lähettämiä
   virhesanomia käsitellään JSON-muodossa.
@@ -204,14 +206,13 @@ class RestYhteys(AsynkroninenYhteys):
   (ks. esim. Django-Rest-Framework).
   '''
 
-  def __init__(self, *args, avain, **kwargs):
+  def __init__(self, *args, avain=None, **kwargs):
     super().__init__(*args, **kwargs)
-    self.avain = avain
+    if avain is not None:
+      self.tunnistautuminen = {
+        'Authorization': f'Token {avain}'
+      }
     # def __init__
-
-  @property
-  def tunnistautuminen(self):
-    return {'Authorization': f'Token {self.avain}'}
 
   def pyynnon_otsakkeet(self, **kwargs):
     return {
