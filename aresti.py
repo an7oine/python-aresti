@@ -257,12 +257,9 @@ class RestYhteys(AsynkroninenYhteys):
   async def _tulkitse_sanoma(self, metodi, sanoma):
     if sanoma.status >= 400:
       raise await self.poikkeus(sanoma)
-    if metodi in ('GET', 'POST', 'PATCH'):
-      try:
-        return await sanoma.json()
-      except:
-        return None
-    else:
+    try:
+      return await sanoma.json()
+    except BaseException:
       return await super()._tulkitse_sanoma(metodi, sanoma)
     # async def _tulkitse_sanoma
 
