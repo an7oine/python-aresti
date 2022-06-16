@@ -128,9 +128,11 @@ class AsynkroninenYhteys:
     # async def nouda_otsakkeet
 
   @mittaa
-  async def nouda_data(self, polku, **kwargs):
+  async def nouda_data(
+    self, polku, *, suhteellinen=True, **kwargs
+  ):
     async with self._istunto.get(
-      self.palvelin + polku,
+      self.palvelin + polku if suhteellinen else polku,
       params=kwargs,
       headers=self._pyynnon_otsakkeet(
         metodi='GET',
@@ -286,28 +288,19 @@ class RestYhteys(AsynkroninenYhteys):
     data = []
     osoite = self.palvelin + polku
     while True:
-      async with self._istunto.get(
+      sivullinen = await self.nouda_data(
         osoite,
-        params=kwargs,
-        headers=self._pyynnon_otsakkeet(
-          metodi='GET',
-          polku=polku,
-          **kwargs,
-        ),
-      ) as sanoma:
-        if sanoma.status >= 400:
-          raise await self.poikkeus(sanoma)
-        sivullinen = await sanoma.json()
-        if 'results' in sivullinen:
-          data += sivullinen['results']
-          osoite = sivullinen.get('next')
-          if osoite is None:
-            break
-            # if osoite is None
-        else:
-          data = [sivullinen]
+        suhteellinen=False,
+      )
+      if 'results' in sivullinen:
+        data += sivullinen['results']
+        osoite = sivullinen.get('next')
+        if osoite is None:
           break
-        # async with self._istunto.get
+          # if osoite is None
+      else:
+        data = [sivullinen]
+        break
       # while True
     return data
     # async def nouda_sivutettu_data
