@@ -73,9 +73,10 @@ class AsynkroninenYhteys:
     del self._istunto
 
   class Poikkeus(RuntimeError):
-    def __init__(self, status, *, data=None):
-      super().__init__(f'Status {status}')
-      self.status = status
+    def __init__(self, sanoma, *, data=None):
+      super().__init__(f'Status {sanoma.status}')
+      self.sanoma = sanoma
+      self.status = sanoma.status
       self.data = data
       # def __init__
     def __str__(self):
@@ -84,7 +85,7 @@ class AsynkroninenYhteys:
 
   async def poikkeus(self, sanoma):
     poikkeus = self.Poikkeus(
-      sanoma.status,
+      sanoma,
       data=await sanoma.read(),
     )
     if self.debug and sanoma.status >= 400:
@@ -240,12 +241,12 @@ class RestYhteys(AsynkroninenYhteys):
   async def poikkeus(self, sanoma):
     if sanoma.content_type == 'application/json':
       poikkeus = self.Poikkeus(
-        sanoma.status,
+        sanoma,
         json=await sanoma.json(),
       )
     elif sanoma.content_type.startswith('text/'):
       poikkeus = self.Poikkeus(
-        sanoma.status,
+        sanoma,
         teksti=await sanoma.text(),
       )
     else:
