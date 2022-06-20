@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
   setup_requires='git-versiointi',
@@ -10,6 +10,6 @@ setup(
   author='Antti Hautaniemi',
   author_email='antti.hautaniemi@pispalanit.fi',
   licence='MIT',
-  py_modules=['aresti'],
+  packages=find_packages(),
   install_requires=['aiohttp'],
 )
