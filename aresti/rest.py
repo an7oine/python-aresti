@@ -107,6 +107,7 @@ class RestYhteys(AsynkroninenYhteys):
       sivullinen = await self.nouda_data(
         osoite,
         suhteellinen=False,
+        **kwargs
       )
       if 'results' in sivullinen:
         data += sivullinen['results']
