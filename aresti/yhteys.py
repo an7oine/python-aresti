@@ -45,10 +45,11 @@ class AsynkroninenYhteys:
     del self._istunto
 
   class Poikkeus(RuntimeError):
-    def __init__(self, sanoma, *, data=None):
-      super().__init__(f'Status {sanoma.status}')
+    def __init__(self, sanoma, *, status=None, data=None):
+      status = status or getattr(sanoma, 'status', None)
+      super().__init__(f'Status {status}')
       self.sanoma = sanoma
-      self.status = sanoma.status
+      self.status = status
       self.data = data
       # def __init__
     def __str__(self):
