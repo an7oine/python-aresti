@@ -43,3 +43,40 @@ class ei_syotetty:
   def __repr__(self):
     return '<ei syötetty>'
   # class ei_syotetty
+
+
+class luokka_tai_oliometodi:
+
+  def __init__(self, luokkametodi=None, oliometodi=None):
+    self._luokkametodi = luokkametodi
+    self._oliometodi = oliometodi
+
+  def oliometodi(self, oliometodi):
+    self._oliometodi = oliometodi
+    return self
+
+  def luokkametodi(self, luokkametodi):
+    self._luokkametodi = luokkametodi
+    return self
+
+  def __get__(self, instance, cls=None):
+    if instance is not None:
+      p = functools.partial(self._oliometodi, instance)
+    else:
+      p = functools.partial(self._luokkametodi, cls)
+    p.__maare__ = self
+    return p
+    # def __get__
+
+  # class luokka_tai_oliometodi
+
+
+class luokkamaare:
+
+  def __init__(self, luokkametodi):
+    self.luokkametodi = luokkametodi
+
+  def __get__(self, instance, cls=None):
+    return self.luokkametodi(cls)
+
+  # class luokkamaare
