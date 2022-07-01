@@ -24,10 +24,15 @@ class AsynkroninenYhteys:
     data = await yhteys.nouda_data('/abc/def')
   ```
   '''
+  palvelin = None
+  debug = False
 
-  def __init__(self, palvelin, *, debug=False):
-    self.palvelin = palvelin
-    self.debug = debug
+  def __init__(self, palvelin=None, *, debug=None):
+    if palvelin is not None:
+      self.palvelin = palvelin
+    assert self.palvelin is not None
+    if debug is not None:
+      self.debug = debug
     # def __init__
 
   async def __aenter__(self):

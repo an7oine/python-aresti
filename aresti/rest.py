@@ -19,9 +19,11 @@ class RestYhteys(AsynkroninenYhteys):
   sivullisia dataa käyttäen JSON-avaimia `results` ja `next`
   (ks. esim. Django-Rest-Framework).
   '''
+  avain = None
 
   def __init__(self, *args, avain=None, **kwargs):
     super().__init__(*args, **kwargs)
+    avain = self.avain if avain is None else avain
     if avain is not None:
       self.tunnistautuminen = {
         'Authorization': f'Token {avain}'
