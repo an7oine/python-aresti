@@ -101,6 +101,21 @@ class AsynkroninenYhteys:
     # async def nouda_otsakkeet
 
   @mittaa
+  async def nouda_meta(self, polku, **kwargs):
+    async with self._istunto.options(
+      self.palvelin + polku,
+      params=kwargs,
+      headers=self._pyynnon_otsakkeet(
+        metodi='OPTIONS',
+        polku=polku,
+        **kwargs,
+      ),
+    ) as sanoma:
+      return await self._tulkitse_sanoma('OPTIONS', sanoma)
+      # async with self._istunto.options
+    # async def nouda_meta
+
+  @mittaa
   async def nouda_data(
     self, polku, *, suhteellinen=True, **kwargs
   ):
