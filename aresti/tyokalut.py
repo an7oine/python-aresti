@@ -1,6 +1,8 @@
 import functools
 from time import time
 
+from aiohttp import ClientError
+
 
 def mittaa(f):
   '''
@@ -17,6 +19,18 @@ def mittaa(f):
     return tulos
   return _f
   # def mittaa
+
+
+def kaanna_poikkeus(f):
+  # pylint: disable=invalid-name
+  @functools.wraps(f)
+  async def kaannetty(self, *args, **kwargs):
+    try:
+      return await kaannetty.__wrapped__(self, *args, **kwargs)
+    except ClientError as exc:
+      raise self.Poikkeus from exc
+  return kaannetty
+  # def kaanna_poikkeus
 
 
 @type.__call__

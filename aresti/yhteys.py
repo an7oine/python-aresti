@@ -2,7 +2,7 @@ import pprint
 
 import aiohttp
 
-from .tyokalut import mittaa
+from aresti.tyokalut import mittaa, kaanna_poikkeus
 
 
 class AsynkroninenYhteys:
@@ -45,8 +45,8 @@ class AsynkroninenYhteys:
     del self._istunto
 
   class Poikkeus(RuntimeError):
-    def __init__(self, sanoma, *, status=None, data=None):
-      status = status or getattr(sanoma, 'status', None)
+    def __init__(self, *, sanoma=None, status=None, data=None):
+      status = status or getattr(sanoma, 'status', None) or 0
       super().__init__(f'Status {status}')
       self.sanoma = sanoma
       self.status = status
@@ -58,7 +58,7 @@ class AsynkroninenYhteys:
 
   async def poikkeus(self, sanoma):
     poikkeus = self.Poikkeus(
-      sanoma,
+      sanoma=sanoma,
       data=await sanoma.read(),
     )
     if self.debug and sanoma.status >= 400:
@@ -85,6 +85,7 @@ class AsynkroninenYhteys:
     return await sanoma.text()
     # async def _tulkitse_sanoma
 
+  @kaanna_poikkeus
   @mittaa
   async def nouda_otsakkeet(self, polku, **kwargs):
     async with self._istunto.head(
@@ -100,6 +101,7 @@ class AsynkroninenYhteys:
       # async with self._istunto.head
     # async def nouda_otsakkeet
 
+  @kaanna_poikkeus
   @mittaa
   async def nouda_meta(self, polku, **kwargs):
     async with self._istunto.options(
@@ -115,6 +117,7 @@ class AsynkroninenYhteys:
       # async with self._istunto.options
     # async def nouda_meta
 
+  @kaanna_poikkeus
   @mittaa
   async def nouda_data(
     self, polku, *, suhteellinen=True, **kwargs
@@ -132,6 +135,7 @@ class AsynkroninenYhteys:
       # async with self._istunto.get
     # async def nouda_data
 
+  @kaanna_poikkeus
   @mittaa
   async def lisaa_data(self, polku, data, **kwargs):
     async with self._istunto.post(
@@ -149,6 +153,7 @@ class AsynkroninenYhteys:
       # async with self._istunto.post
     # async def lisaa_data
 
+  @kaanna_poikkeus
   @mittaa
   async def muuta_data(self, polku, data, **kwargs):
     async with self._istunto.patch(
@@ -166,6 +171,7 @@ class AsynkroninenYhteys:
       # async with self._istunto.post
     # async def muuta_data
 
+  @kaanna_poikkeus
   @mittaa
   async def tuhoa_data(self, polku, **kwargs):
     async with self._istunto.delete(
