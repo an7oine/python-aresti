@@ -39,13 +39,15 @@ class RestYhteys(AsynkroninenYhteys):
 
   class Poikkeus(AsynkroninenYhteys.Poikkeus):
     def __init__(
-      self, *args,
+      self,
+      sanoma=None,
+      *,
       json=None,
       teksti='',
       **kwargs,
     ):
       # pylint: disable=redefined-outer-name
-      super().__init__(*args, **kwargs)
+      super().__init__(sanoma=sanoma, **kwargs)
       self.json = json
       self.teksti = teksti
     def __str__(self):
