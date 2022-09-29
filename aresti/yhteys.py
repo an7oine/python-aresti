@@ -87,15 +87,16 @@ class AsynkroninenYhteys:
 
   @kaanna_poikkeus
   @mittaa
-  async def nouda_otsakkeet(self, polku, **kwargs):
+  async def nouda_otsakkeet(self, polku, *, headers=None, **kwargs):
     async with self._istunto.head(
       self.palvelin + polku,
-      params=kwargs,
+      #params=kwargs,
       headers=self._pyynnon_otsakkeet(
         metodi='HEAD',
         polku=polku,
-        **kwargs,
+        **headers or {},
       ),
+      **kwargs,
     ) as sanoma:
       return await self._tulkitse_sanoma('HEAD', sanoma)
       # async with self._istunto.head
@@ -103,15 +104,16 @@ class AsynkroninenYhteys:
 
   @kaanna_poikkeus
   @mittaa
-  async def nouda_meta(self, polku, **kwargs):
+  async def nouda_meta(self, polku, *, headers=None, **kwargs):
     async with self._istunto.options(
       self.palvelin + polku,
-      params=kwargs,
+      #params=kwargs,
       headers=self._pyynnon_otsakkeet(
         metodi='OPTIONS',
         polku=polku,
-        **kwargs,
+        **headers or {},
       ),
+      **kwargs,
     ) as sanoma:
       return await self._tulkitse_sanoma('OPTIONS', sanoma)
       # async with self._istunto.options
@@ -120,16 +122,17 @@ class AsynkroninenYhteys:
   @kaanna_poikkeus
   @mittaa
   async def nouda_data(
-    self, polku, *, suhteellinen=True, **kwargs
+    self, polku, *, suhteellinen=True, headers=None, **kwargs
   ):
     async with self._istunto.get(
       self.palvelin + polku if suhteellinen else polku,
-      params=kwargs,
+      #params=kwargs,
       headers=self._pyynnon_otsakkeet(
         metodi='GET',
         polku=polku,
-        **kwargs,
+        **headers or {},
       ),
+      **kwargs,
     ) as sanoma:
       return await self._tulkitse_sanoma('GET', sanoma)
       # async with self._istunto.get
@@ -137,17 +140,18 @@ class AsynkroninenYhteys:
 
   @kaanna_poikkeus
   @mittaa
-  async def lisaa_data(self, polku, data, **kwargs):
+  async def lisaa_data(self, polku, data, *, headers=None, **kwargs):
     async with self._istunto.post(
       self.palvelin + polku,
-      params=kwargs,
+      #params=kwargs,
       headers=self._pyynnon_otsakkeet(
         metodi='POST',
         polku=polku,
         data=data,
-        **kwargs,
+        **headers or {},
       ),
       data=data,
+      **kwargs,
     ) as sanoma:
       return await self._tulkitse_sanoma('POST', sanoma)
       # async with self._istunto.post
@@ -155,33 +159,35 @@ class AsynkroninenYhteys:
 
   @kaanna_poikkeus
   @mittaa
-  async def muuta_data(self, polku, data, **kwargs):
+  async def muuta_data(self, polku, data, *, headers=None, **kwargs):
     async with self._istunto.patch(
       self.palvelin + polku,
-      params=kwargs,
+      #params=kwargs,
       headers=self._pyynnon_otsakkeet(
         metodi='PATCH',
         polku=polku,
         data=data,
-        **kwargs,
+        **headers or {},
       ),
       data=data,
+      **kwargs,
     ) as sanoma:
       return await self._tulkitse_sanoma('PATCH', sanoma)
-      # async with self._istunto.post
+      # async with self._istunto.patch
     # async def muuta_data
 
   @kaanna_poikkeus
   @mittaa
-  async def tuhoa_data(self, polku, **kwargs):
+  async def tuhoa_data(self, polku, *, headers=None, **kwargs):
     async with self._istunto.delete(
       self.palvelin + polku,
-      params=kwargs,
+      #params=kwargs,
       headers=self._pyynnon_otsakkeet(
         metodi='DELETE',
         polku=polku,
-        **kwargs,
+        **headers or {},
       ),
+      **kwargs,
     ) as sanoma:
       return await self._tulkitse_sanoma('DELETE', sanoma)
     # async def tuhoa_data
