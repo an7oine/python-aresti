@@ -6,17 +6,23 @@ from aiohttp import ClientError
 
 def mittaa(f):
   '''
-  Mittaa ja raportoi asynkronisen funktion suoritukseen
+  Mittaa ja raportoi asynkronisen metodin suoritukseen
   kulunut aika.
+
+  Ohitetaan, ellei `self.mittaa_pyynnot` ole tosi.
   '''
   # pylint: disable=invalid-name
   @functools.wraps(f)
-  async def _f(*args, **kwargs):
+  async def _f(self, *args, **kwargs):
+    if not getattr(self, 'mittaa_pyynnot', False):
+      return await f(self, *args, **kwargs)
     alku = time()
-    tulos = await f(*args, **kwargs)
-    kesto = f'{time() - alku:.1f}'.replace('.', ',')
-    print(f'{f.__name__} {args[1]} kesti {kesto} s')
-    return tulos
+    try:
+      return await f(self, *args, **kwargs)
+    finally:
+      kesto = f'{time() - alku:.1f}'.replace('.', ',')
+      print(f'{f.__name__} {args} kesti {kesto} s')
+    # async def _f
   return _f
   # def mittaa
 
