@@ -9,19 +9,20 @@ def mittaa(f):
   Mittaa ja raportoi asynkronisen metodin suoritukseen
   kulunut aika.
 
-  Ohitetaan, ellei `self.mittaa_pyynnot` ole tosi.
+  Ohitetaan, jos `self.mittaa_pyynnot` on tyhjä.
   '''
   # pylint: disable=invalid-name
   @functools.wraps(f)
   async def _f(self, *args, **kwargs):
-    if not getattr(self, 'mittaa_pyynnot', False):
+    if not (
+      mittaa_pyynnot := getattr(self, 'mittaa_pyynnot', False)
+    ):
       return await f(self, *args, **kwargs)
     alku = time()
     try:
       return await f(self, *args, **kwargs)
     finally:
-      kesto = f'{time() - alku:.1f}'.replace('.', ',')
-      print(f'{f.__name__} {args} kesti {kesto} s')
+      mittaa_pyynnot(f, args, time() - alku)
     # async def _f
   return _f
   # def mittaa

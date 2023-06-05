@@ -26,9 +26,13 @@ class AsynkroninenYhteys:
   '''
   palvelin = None
   debug = False
-  mittaa_pyynnot = False
+  mittaa_pyynnot = None
 
-  def __init__(self, palvelin=None, *, debug=None, mittaa_pyynnot=None):
+  def __init__(
+    self, palvelin=None, *,
+    debug=None,
+    mittaa_pyynnot=None
+  ):
     if palvelin is not None:
       self.palvelin = palvelin
     assert self.palvelin is not None
