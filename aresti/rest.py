@@ -122,6 +122,8 @@ class RestYhteys(AsynkroninenYhteys):
       else:
         data = [sivullinen]
         break
+      # Ei lisätä parametrejä uudelleen `next`-sivun osoitteeseen.
+      kwargs = {}
       # while True
     return data
     # async def nouda_sivutettu_data
