@@ -1,23 +1,19 @@
-import json
-import pprint
+from typing import AsyncIterable
 
+from .json import JsonYhteys
 from .tyokalut import mittaa
-from .yhteys import AsynkroninenYhteys
 
 
-class RestYhteys(AsynkroninenYhteys):
+class RestYhteys(JsonYhteys):
   '''
-  REST-yhteys.
+  Django-Rest-Framework -pohjainen, JSON-muotoinen yhteys.
 
   Tunnistautuminen `avaimen` avulla: lisätään otsake
   `Authorization: Token xxx`, mikäli `avain` on annettu.
 
-  Saapuvaa ja lähtevää dataa sekä palvelimen lähettämiä
-  virhesanomia käsitellään JSON-muodossa.
-
-  Lisätty toteutus: `nouda_sivutettu_data(polku)`: poimitaan useita
-  sivullisia dataa käyttäen JSON-avaimia `results` ja `next`
-  (ks. esim. Django-Rest-Framework).
+  Lisätty toteutukset sivutetun datan (`results` + `next`) hakuun:
+  - `nouda_sivutettu_data(polku)`: kootaan kaikki tulokset
+  - `tuota_sivutettu_data(polku)`: tuotetaan dataa sivu kerrallaan.
   '''
   avain = None
 
@@ -32,76 +28,37 @@ class RestYhteys(AsynkroninenYhteys):
 
   def pyynnon_otsakkeet(self, **kwargs):
     return {
+      **super().pyynnon_otsakkeet(**kwargs),
       **self.tunnistautuminen,
-      'Content-Type': 'application/json',
     }
     # def pyynnon_otsakkeet
 
-  class Poikkeus(AsynkroninenYhteys.Poikkeus):
-    def __init__(
-      self,
-      sanoma=None,
-      *,
-      json=None,
-      teksti='',
-      **kwargs,
-    ):
-      # pylint: disable=redefined-outer-name
-      super().__init__(sanoma=sanoma, **kwargs)
-      self.json = json
-      self.teksti = teksti
-    def __str__(self):
-      return pprint.pformat(self.json or self.teksti)
-      #teksti = pprint.pformat(self.json) if self.json else self.teksti
-      #if self.status < 500:
-      #  teksti = teksti[:100]
-      #return (
-      #  f'HTTP {self.status}: {teksti}'
-      #)
-    # class Poikkeus
-
-  async def poikkeus(self, sanoma):
-    if sanoma.content_type == 'application/json':
-      poikkeus = self.Poikkeus(
-        sanoma,
-        json=await sanoma.json(),
+  async def tuota_sivutettu_data(
+    self,
+    polku: str,
+    **kwargs
+  ) -> AsyncIterable:
+    osoite = self.palvelin + polku
+    while True:
+      sivullinen = await self.nouda_data(
+        osoite,
+        suhteellinen=False,
+        **kwargs
       )
-    elif sanoma.content_type.startswith('text/'):
-      poikkeus = self.Poikkeus(
-        sanoma,
-        teksti=await sanoma.text(),
-      )
-    else:
-      return await super().poikkeus(sanoma)
-    if self.debug and sanoma.status >= 400:
-      print(poikkeus)
-    return poikkeus
-    # async def poikkeus
-
-  async def _tulkitse_sanoma(self, metodi, sanoma):
-    if sanoma.status >= 400:
-      raise await self.poikkeus(sanoma)
-    try:
-      return await sanoma.json()
-    except BaseException:
-      return await super()._tulkitse_sanoma(metodi, sanoma)
-    # async def _tulkitse_sanoma
-
-  async def lisaa_data(self, polku, data, **kwargs):
-    return await super().lisaa_data(
-      polku,
-      json.dumps(data),
-      **kwargs
-    )
-    # async def lisaa_data
-
-  async def muuta_data(self, polku, data, **kwargs):
-    return await super().muuta_data(
-      polku,
-      json.dumps(data),
-      **kwargs
-    )
-    # async def muuta_data
+      if 'results' in sivullinen:
+        for tulos in sivullinen['results']:
+          yield tulos
+        osoite = sivullinen.get('next')
+        if osoite is None:
+          break
+          # if osoite is None
+      else:
+        yield sivullinen
+        break
+      # Ei lisätä parametrejä uudelleen `next`-sivun osoitteeseen.
+      kwargs = {}
+      # while True
+    # async def tuota_sivutettu_data
 
   @mittaa
   async def nouda_sivutettu_data(self, polku, **kwargs):
