@@ -1,4 +1,4 @@
 from .rest import RestYhteys
-from .sanoma import RestSanoma
+from .sanoma import RestKentta, RestSanoma
 from .tyokalut import ei_syotetty, mittaa
 from .yhteys import AsynkroninenYhteys

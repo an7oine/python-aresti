@@ -1,9 +1,27 @@
 from dataclasses import fields
+import functools
+from typing import get_origin, get_args, Union
 
-from .tyokalut import ei_syotetty
+from .tyokalut import ei_syotetty, luokkamaare
 
 
-class RestSanoma:
+class RestKentta:
+  '''
+  Rest-rajapinnan kautta vaihdettava kenttä, joka muunnetaan
+  automaattisesti saapuessa ja lähtiessä.
+  '''
+
+  def lahteva(self):
+    return self
+
+  @classmethod
+  def saapuva(cls, saapuva):
+    return saapuva
+
+  # class RestKentta
+
+
+class RestSanoma(RestKentta):
   '''
   Dataclass-sanomaluokan saate, joka sisältää:
   - muunnostaulukon `_rest`, sekä metodit
@@ -16,13 +34,70 @@ class RestSanoma:
   #   <rest-avain>, lambda lahteva: <...>, lambda saapuva: <...>
   # )
   # <sanoma-avain>: <rest-avain>
-  _rest = {}
+  _rest: dict
+
+  @luokkamaare
+  def _rest(cls):
+    '''
+    Muodosta `_rest`-sanakirja automaattisesti sisempien
+    RestKenttien osalta.
+    '''
+    # pylint: disable=no-self-argument
+    def _kentat():
+      for kentta in fields(cls):
+        if isinstance(kentta.type, type) \
+        and issubclass(kentta.type, RestKentta):
+          yield kentta.name, (
+            kentta.name, kentta.type.lahteva, kentta.type.saapuva
+          )
+        elif get_origin(kentta.type) is Union:
+          try:
+            tyyppi, = {
+              tyyppi
+              for tyyppi in get_args(kentta.type)
+              if isinstance(tyyppi, type)
+              and issubclass(tyyppi, RestKentta)
+            }
+          except ValueError:
+            pass
+          else:
+            yield kentta.name, (
+              kentta.name, tyyppi.lahteva, tyyppi.saapuva
+            )
+        elif get_origin(kentta.type) is list:
+          try:
+            tyyppi, = {
+              tyyppi
+              for tyyppi in get_args(kentta.type)
+              if isinstance(tyyppi, type)
+              and issubclass(tyyppi, RestKentta)
+            }
+          except ValueError:
+            pass
+          else:
+            yield kentta.name, (
+              kentta.name,
+              functools.partial(
+                lambda tl, lahteva: list(map(tl, lahteva)),
+                tyyppi.lahteva,
+              ),
+              functools.partial(
+                lambda ts, saapuva: list(map(ts, saapuva)),
+                tyyppi.saapuva,
+              )
+            )
+        # for kentta in fields
+      # def _kentat
+    return dict(_kentat())
+    # def _rest
 
   def lahteva(self):
     '''
     Muunnetaan self-sanoman sisältö REST-sanakirjaksi
     `self._rest`-muunnostaulun mukaisesti.
     '''
+    if self is None:
+      return None
     return {
       muunnettu_avain: muunnos(arvo)
       for arvo, muunnettu_avain, muunnos in (
@@ -47,6 +122,8 @@ class RestSanoma:
     Muunnetaan saapuvan REST-sanakirjan sisältö `cls`-olioksi
     `cls._rest`-muunnostaulun mukaisesti.
     '''
+    if saapuva is None:
+      return None
     return cls(**{
       avain: muunnos(saapuva[muunnettu_avain])
       for avain, muunnettu_avain, muunnos in (
