@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-from typing import AsyncIterable
+from typing import AsyncIterable, Coroutine, Optional, Union
 
 from .json import JsonYhteys
-from .tyokalut import mittaa
+from .rajapinta import Rajapinta
+from .tyokalut import luokkamaare, mittaa
 
 
 @dataclass
@@ -16,6 +17,8 @@ class RestYhteys(JsonYhteys):
   Lisätty toteutukset sivutetun datan (`results` + `next`) hakuun:
   - `nouda_sivutettu_data(polku)`: kootaan kaikki tulokset
   - `tuota_sivutettu_data(polku)`: tuotetaan dataa sivu kerrallaan.
+
+  Lisätty periytetty (REST-) `Rajapinta`-luokka.
   '''
   avain: str = None
 
@@ -26,6 +29,45 @@ class RestYhteys(JsonYhteys):
   ensimmainen_sivu = 1
 
   tunnistautuminen = None
+
+  class Rajapinta(Rajapinta):
+
+    class Meta(Rajapinta.Meta):
+      '''
+      Määritellään osoite `rajapinta_pk`, oletuksena `rajapinta` + "<pk>/".
+      '''
+      rajapinta_pk: str
+
+      @luokkamaare
+      def rajapinta_pk(cls):
+        return cls.rajapinta + '%(pk)s/'
+
+      # class Meta
+
+    def nouda(
+      self,
+      pk: Optional[Union[str, int]] = None,
+      **params
+    ) -> Union[Coroutine, AsyncIterable[Rajapinta.Tuloste]]:
+      '''
+      Kun `pk` on annettu: palautetaan alirutiini vastaavan
+      tietueen hakemiseksi.
+      Muuten: palautetaan asynkroninen iteraattori kaikkien hakuehtoihin
+      (`kwargs`) täsmäävien tietueiden hakemiseksi.
+      '''
+      # pylint: disable=no-member
+      if pk is not None:
+        return super().nouda(pk=pk, **params)
+      async def _nouda():
+        async for data in self.yhteys.tuota_sivutettu_data(
+          self.Meta.rajapinta,
+          params=params,
+        ):
+          yield self._tulkitse_saapuva(data)
+      return _nouda()
+      # def nouda
+
+    # class Rajapinta
 
   def __post_init__(self):
     try:
