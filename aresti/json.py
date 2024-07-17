@@ -9,6 +9,7 @@ class JsonYhteys(AsynkroninenYhteys):
 
   def pyynnon_otsakkeet(self, **kwargs):
     return {
+      'Accept': 'application/json',
       'Content-Type': 'application/json',
       **super().pyynnon_otsakkeet(**kwargs)
     }
