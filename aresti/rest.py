@@ -18,6 +18,13 @@ class RestYhteys(JsonYhteys):
   - `tuota_sivutettu_data(polku)`: tuotetaan dataa sivu kerrallaan.
   '''
   avain: str = None
+
+  tulokset_avain = 'results'
+  seuraava_sivu_avain = 'next'
+
+  valittu_sivu_avain = None
+  ensimmainen_sivu = 1
+
   tunnistautuminen = None
 
   def __post_init__(self):
@@ -44,6 +51,8 @@ class RestYhteys(JsonYhteys):
   async def tuota_sivutettu_data(
     self,
     polku: str,
+    *,
+    params: dict = None,
     **kwargs
   ) -> AsyncIterable:
     osoite = self.palvelin + polku
@@ -51,45 +60,40 @@ class RestYhteys(JsonYhteys):
       sivullinen = await self.nouda_data(
         osoite,
         suhteellinen=False,
+        params=params or {},
         **kwargs
       )
-      if 'results' in sivullinen:
-        for tulos in sivullinen['results']:
+      if self.tulokset_avain in sivullinen:
+        for tulos in sivullinen[self.tulokset_avain]:
           yield tulos
-        osoite = sivullinen.get('next')
+        if self.seuraava_sivu_avain:
+          osoite = sivullinen.get(self.seuraava_sivu_avain)
+          # Ei lisätä parametrejä uudelleen `next`-sivun
+          # osoitteeseen.
+          params = None
+        elif self.valittu_sivu_avain \
+        and sivullinen[self.tulokset_avain]:
+          params = params or {}
+          sivu = params.get(self.valittu_sivu_avain)
+          params[self.valittu_sivu_avain] = (
+            int(sivu or self.ensimmainen_sivu) + 1
+          )
+        else:
+          break
         if osoite is None:
           break
           # if osoite is None
       else:
         yield sivullinen
         break
-      # Ei lisätä parametrejä uudelleen `next`-sivun osoitteeseen.
-      kwargs = {}
       # while True
     # async def tuota_sivutettu_data
 
   @mittaa
   async def nouda_sivutettu_data(self, polku, **kwargs):
     data = []
-    osoite = self.palvelin + polku
-    while True:
-      sivullinen = await self.nouda_data(
-        osoite,
-        suhteellinen=False,
-        **kwargs
-      )
-      if 'results' in sivullinen:
-        data += sivullinen['results']
-        osoite = sivullinen.get('next')
-        if osoite is None:
-          break
-          # if osoite is None
-      else:
-        data = [sivullinen]
-        break
-      # Ei lisätä parametrejä uudelleen `next`-sivun osoitteeseen.
-      kwargs = {}
-      # while True
+    async for tulos in self.tuota_sivutettu_data(polku, **kwargs):
+      data.append(tulos)
     return data
     # async def nouda_sivutettu_data
 
