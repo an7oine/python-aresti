@@ -1,10 +1,13 @@
+from dataclasses import dataclass
 import pprint
+from typing import Optional
 
 import aiohttp
 
 from aresti.tyokalut import mittaa, kaanna_poikkeus
 
 
+@dataclass
 class AsynkroninenYhteys:
   '''
   Abstrakti, asynkroninen HTTP-yhteys palvelimelle.
@@ -24,23 +27,9 @@ class AsynkroninenYhteys:
     data = await yhteys.nouda_data('/abc/def')
   ```
   '''
-  palvelin = None
-  debug = False
-  mittaa_pyynnot = None
-
-  def __init__(
-    self, palvelin=None, *,
-    debug=None,
-    mittaa_pyynnot=None
-  ):
-    if palvelin is not None:
-      self.palvelin = palvelin
-    assert self.palvelin is not None
-    if debug is not None:
-      self.debug = debug
-    if mittaa_pyynnot is not None:
-      self.mittaa_pyynnot = mittaa_pyynnot
-    # def __init__
+  palvelin: str = None
+  debug: bool = False
+  mittaa_pyynnot: Optional[bool] = None
 
   async def __aenter__(self):
     # pylint: disable=attribute-defined-outside-init
