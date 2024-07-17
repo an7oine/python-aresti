@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Optional, Union
 
-from .yhteys import AsynkroninenYhteys
-from .sanoma import RestSanoma
-from .tyokalut import luokkamaare
+from ..yhteys import AsynkroninenYhteys
+from ..sanoma import RestSanoma
+from ..tyokalut import luokkamaare
 
 
 class RajapintaMeta(type):
@@ -50,6 +52,9 @@ class RajapintaMeta(type):
 class Rajapinta(metaclass=RajapintaMeta):
 
   yhteys: AsynkroninenYhteys
+
+  class ToimintoEiSallittu(RuntimeError):
+    pass
 
   @dataclass
   class Syote(RestSanoma):

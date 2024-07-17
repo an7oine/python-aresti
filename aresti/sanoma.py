@@ -1,6 +1,6 @@
 from dataclasses import fields
 import functools
-from typing import get_origin, get_args, Union
+from typing import get_args, get_origin, get_type_hints, Union
 
 from .tyokalut import ei_syotetty, luokkamaare
 
@@ -44,17 +44,19 @@ class RestSanoma(RestKentta):
     '''
     # pylint: disable=no-self-argument
     def _kentat():
+      tyypit = get_type_hints(cls)
       for kentta in fields(cls):
-        if isinstance(kentta.type, type) \
-        and issubclass(kentta.type, RestKentta):
+        tyyppi = tyypit.get(kentta.name, kentta.type)
+        if isinstance(tyyppi, type) \
+        and issubclass(tyyppi, RestKentta):
           yield kentta.name, (
-            kentta.name, kentta.type.lahteva, kentta.type.saapuva
+            kentta.name, tyyppi.lahteva, tyyppi.saapuva
           )
-        elif get_origin(kentta.type) is Union:
+        elif get_origin(tyyppi) is Union:
           try:
             tyyppi, = {
               tyyppi
-              for tyyppi in get_args(kentta.type)
+              for tyyppi in get_args(tyyppi)
               if isinstance(tyyppi, type)
               and issubclass(tyyppi, RestKentta)
             }
@@ -64,11 +66,11 @@ class RestSanoma(RestKentta):
             yield kentta.name, (
               kentta.name, tyyppi.lahteva, tyyppi.saapuva
             )
-        elif get_origin(kentta.type) is list:
+        elif get_origin(tyyppi) is list:
           try:
             tyyppi, = {
               tyyppi
-              for tyyppi in get_args(kentta.type)
+              for tyyppi in get_args(tyyppi)
               if isinstance(tyyppi, type)
               and issubclass(tyyppi, RestKentta)
             }
