@@ -62,17 +62,17 @@ class AsynkroninenYhteys:
     return poikkeus
     # async def poikkeus
 
-  def pyynnon_otsakkeet(self, **kwargs):
+  async def pyynnon_otsakkeet(self, **kwargs):
     # pylint: disable=unused-argument
     return {}
 
-  def _pyynnon_otsakkeet(self, **kwargs):
+  async def _pyynnon_otsakkeet(self, **kwargs):
     return {
       avain: arvo
-      for avain, arvo in self.pyynnon_otsakkeet(**kwargs).items()
+      for avain, arvo in (await self.pyynnon_otsakkeet(**kwargs)).items()
       if avain and arvo is not None
     }
-    # def _pyynnon_otsakkeet
+    # async def _pyynnon_otsakkeet
 
   async def _tulkitse_sanoma(self, metodi, sanoma):
     # pylint: disable=unused-argument
@@ -87,7 +87,7 @@ class AsynkroninenYhteys:
     async with self._istunto.head(
       self.palvelin + polku,
       #params=kwargs,
-      headers=self._pyynnon_otsakkeet(
+      headers=await self._pyynnon_otsakkeet(
         metodi='HEAD',
         polku=polku,
         **headers or {},
@@ -104,7 +104,7 @@ class AsynkroninenYhteys:
     async with self._istunto.options(
       self.palvelin + polku,
       #params=kwargs,
-      headers=self._pyynnon_otsakkeet(
+      headers=await self._pyynnon_otsakkeet(
         metodi='OPTIONS',
         polku=polku,
         **headers or {},
@@ -123,7 +123,7 @@ class AsynkroninenYhteys:
     async with self._istunto.get(
       self.palvelin + polku if suhteellinen else polku,
       #params=kwargs,
-      headers=self._pyynnon_otsakkeet(
+      headers=await self._pyynnon_otsakkeet(
         metodi='GET',
         polku=polku,
         **headers or {},
@@ -140,7 +140,7 @@ class AsynkroninenYhteys:
     async with self._istunto.post(
       self.palvelin + polku,
       #params=kwargs,
-      headers=self._pyynnon_otsakkeet(
+      headers=await self._pyynnon_otsakkeet(
         metodi='POST',
         polku=polku,
         data=data,
@@ -159,7 +159,7 @@ class AsynkroninenYhteys:
     async with self._istunto.patch(
       self.palvelin + polku,
       #params=kwargs,
-      headers=self._pyynnon_otsakkeet(
+      headers=await self._pyynnon_otsakkeet(
         metodi='PATCH',
         polku=polku,
         data=data,
@@ -178,7 +178,7 @@ class AsynkroninenYhteys:
     async with self._istunto.delete(
       self.palvelin + polku,
       #params=kwargs,
-      headers=self._pyynnon_otsakkeet(
+      headers=await self._pyynnon_otsakkeet(
         metodi='DELETE',
         polku=polku,
         **headers or {},

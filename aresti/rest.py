@@ -83,12 +83,12 @@ class RestYhteys(JsonYhteys):
       }
     # def __post_init__
 
-  def pyynnon_otsakkeet(self, **kwargs):
+  async def pyynnon_otsakkeet(self, **kwargs):
     return {
-      **super().pyynnon_otsakkeet(**kwargs),
+      **await super().pyynnon_otsakkeet(**kwargs),
       **(self.tunnistautuminen or {}),
     }
-    # def pyynnon_otsakkeet
+    # async def pyynnon_otsakkeet
 
   async def tuota_sivutettu_data(
     self,

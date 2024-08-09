@@ -7,13 +7,13 @@ from .yhteys import AsynkroninenYhteys
 class JsonYhteys(AsynkroninenYhteys):
   ''' JSON-muotoista dataa lähettävä ja vastaanottava yhteys. '''
 
-  def pyynnon_otsakkeet(self, **kwargs):
+  async def pyynnon_otsakkeet(self, **kwargs):
     return {
+      **await super().pyynnon_otsakkeet(**kwargs),
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      **super().pyynnon_otsakkeet(**kwargs)
     }
-    # def pyynnon_otsakkeet
+    # async def pyynnon_otsakkeet
 
   class Poikkeus(AsynkroninenYhteys.Poikkeus):
 
