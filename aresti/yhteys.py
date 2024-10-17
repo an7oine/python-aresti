@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 import pprint
 from typing import Optional
@@ -31,14 +32,27 @@ class AsynkroninenYhteys:
   debug: bool = False
   mittaa_pyynnot: Optional[bool] = None
 
+  def __post_init__(self):
+    # pylint: disable=attribute-defined-outside-init
+    self._istunto_lukitus = asyncio.Lock()
+    self._istunto_avoinna = 0
+
   async def __aenter__(self):
     # pylint: disable=attribute-defined-outside-init
-    self._istunto = aiohttp.ClientSession()
+    async with self._istunto_lukitus:
+      if not (istunto_avoinna := self._istunto_avoinna):
+        self._istunto = aiohttp.ClientSession()
+      self._istunto_avoinna = istunto_avoinna + 1
     return self
+    # async def __aenter__
 
   async def __aexit__(self, *exc_info):
-    await self._istunto.close()
-    del self._istunto
+    async with self._istunto_lukitus:
+      if not (istunto_avoinna := self._istunto_avoinna - 1):
+        await self._istunto.close()
+        del self._istunto
+      self._istunto_avoinna = istunto_avoinna
+    # async def __aexit__
 
   class Poikkeus(RuntimeError):
     def __init__(self, *, sanoma=None, status=None, data=None):
