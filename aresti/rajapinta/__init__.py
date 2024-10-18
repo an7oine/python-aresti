@@ -96,14 +96,19 @@ class Rajapinta(metaclass=RajapintaMeta):
   async def nouda(
     self,
     pk: Optional[Union[str, int]] = None,
+    **params,
   ) -> Union[Tuloste, list[Tuloste]]:
     if pk is not None:
       assert self.Meta.rajapinta_pk is not None
       data = await self.yhteys.nouda_data(
-        self.Meta.rajapinta_pk % {'pk': pk}
+        self.Meta.rajapinta_pk % {'pk': pk},
+        params=params,
       )
     else:
-      data = await self.yhteys.nouda_data(self.Meta.rajapinta)
+      data = await self.yhteys.nouda_data(
+        self.Meta.rajapinta,
+        params=params,
+      )
     if isinstance(data, Mapping):
       return self._tulkitse_saapuva(data)
     else:

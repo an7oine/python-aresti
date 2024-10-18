@@ -8,8 +8,10 @@ class SuodatettuRajapinta(Rajapinta):
     suodatusehdot: type
 
   def nouda(self, pk=None, **suodatusehdot):
-    suodatusehdot = self.Meta.suodatusehdot.saapuva(suodatusehdot)
-    return super().nouda(pk=pk, **suodatusehdot.lahteva())
+    return super().nouda(
+      pk=pk,
+      **self.Meta.suodatusehdot(**suodatusehdot).lahteva(),
+    )
     # def nouda
 
   # class SuodatettuRajapinta
@@ -20,14 +22,14 @@ class LuettelomuotoinenRajapinta(SuodatettuRajapinta):
   Sivutusta ei käytetä, tulokset saadaan suoraan luettelona.
   '''
 
-  def nouda(self, pk=None, **params):
+  def nouda(self, pk=None, **suodatusehdot):
     if pk is not None:
-      return super().nouda(pk=pk, **params)
+      return super().nouda(pk=pk, **suodatusehdot)
 
     async def _nouda():
       for data in await self.yhteys.nouda_data(
         self.Meta.rajapinta,
-        params=params,
+        params=self.Meta.suodatusehdot(**suodatusehdot).lahteva(),
       ):
         yield self._tulkitse_saapuva(data)
     return _nouda()
