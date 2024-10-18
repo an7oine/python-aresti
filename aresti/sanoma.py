@@ -1,6 +1,12 @@
 from dataclasses import fields
 import functools
-from typing import get_args, get_origin, get_type_hints, Union
+from typing import (
+  ClassVar,
+  get_args,
+  get_origin,
+  get_type_hints,
+  Union,
+)
 
 from .tyokalut import ei_syotetty, luokkamaare
 
@@ -34,7 +40,7 @@ class RestSanoma(RestKentta):
   #   <rest-avain>, lambda lahteva: <...>, lambda saapuva: <...>
   # )
   # <sanoma-avain>: <rest-avain>
-  _rest: dict
+  _rest: ClassVar[dict]
 
   @luokkamaare
   def _rest(cls):
@@ -47,12 +53,13 @@ class RestSanoma(RestKentta):
       tyypit = get_type_hints(cls)
       for kentta in fields(cls):
         tyyppi = tyypit.get(kentta.name, kentta.type)
-        if isinstance(tyyppi, type) \
-        and issubclass(tyyppi, RestKentta):
+        lahde = get_origin(tyyppi)
+        if isinstance(lahde or tyyppi, type) \
+        and issubclass(lahde or tyyppi, RestKentta):
           yield kentta.name, (
             kentta.name, tyyppi.lahteva, tyyppi.saapuva
           )
-        elif get_origin(tyyppi) is Union:
+        elif lahde is Union:
           try:
             tyyppi, = {
               tyyppi
@@ -66,7 +73,7 @@ class RestSanoma(RestKentta):
             yield kentta.name, (
               kentta.name, tyyppi.lahteva, tyyppi.saapuva
             )
-        elif get_origin(tyyppi) is list:
+        elif lahde is list:
           try:
             tyyppi, = {
               tyyppi
