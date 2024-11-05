@@ -1,4 +1,5 @@
 from dataclasses import fields
+import enum
 import functools
 from typing import (
   ClassVar,
@@ -25,6 +26,17 @@ class RestKentta:
     return saapuva
 
   # class RestKentta
+
+
+class RestValintakentta(RestKentta, enum.StrEnum):
+  '''
+  Kiinteisiin vaihtoehtoihin perustuva kenttä Rest-rajapinnassa.
+  '''
+
+  def lahteva(self):
+    return str(self)
+
+  # class RestValintakentta
 
 
 class RestSanoma(RestKentta):
