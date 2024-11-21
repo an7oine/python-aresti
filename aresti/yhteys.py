@@ -8,7 +8,7 @@ import aiohttp
 from aresti.tyokalut import mittaa, kaanna_poikkeus
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AsynkroninenYhteys:
   '''
   Abstrakti, asynkroninen HTTP-yhteys palvelimelle.
@@ -21,13 +21,15 @@ class AsynkroninenYhteys:
   - `tuhoa_data(polku, data)`: HTTP DELETE
 
   Käyttö asynkronisena kontekstina:
-  ```
-  async with AsynkroninenYhteys(
-    'https://testi.fi'
-  ) as yhteys:
-    data = await yhteys.nouda_data('/abc/def')
-  ```
+
+  >>> async with AsynkroninenYhteys(
+  >>>   palvelin='https://testi.fi',
+  >>>   # debug=True,  # <-- tulosta HTTP 400+ -virheviestit
+  >>>   # mittaa_pyynnot=True,  # <-- mittaa pyyntöjen kesto (ks. tyokalut.py)
+  >>> ) as yhteys:
+  >>>   data = await yhteys.nouda_data('/abc/def')
   '''
+
   palvelin: str = None
   debug: bool = False
   mittaa_pyynnot: Optional[bool] = None
