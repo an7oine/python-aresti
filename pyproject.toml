@@ -1,2 +1,18 @@
 [build-system]
-requires = ["git-versiointi>=1.6rc3", "setuptools>=42", "wheel"]
+requires = ["git-versiointi>=1.7b1", "setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python-aresti"
+description = "Asynkroninen REST-rajapintayhteystoteutus"
+readme = "README.md"
+authors = [
+  {name = "Antti Hautaniemi", email = "antti.hautaniemi@pispalanit.fi"},
+]
+license = {text = "MIT"}
+requires-python = ">= 3.8"
+dynamic = ["version"]
+dependencies = ["aiohttp"]
+
+[project.urls]
+Repository = "https://github.com/an7oine/python-aresti.git"
