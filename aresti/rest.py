@@ -40,7 +40,10 @@ class RestYhteys(JsonYhteys):
 
       @luokkamaare
       def rajapinta_pk(cls):
-        return cls.rajapinta + '%(pk)s/'
+        if cls.rajapinta.endswith('/'):
+          return cls.rajapinta + '%(pk)s/'
+        else:
+          return cls.rajapinta + '/%(pk)s'
 
       # class Meta
 
