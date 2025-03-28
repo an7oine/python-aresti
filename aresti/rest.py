@@ -1,32 +1,30 @@
-from dataclasses import dataclass
-from typing import AsyncIterable, Coroutine, Optional, Union
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import (
+  AsyncIterable,
+  Coroutine,
+  Optional,
+  Union,
+)
 
 from .json import JsonYhteys
 from .rajapinta import Rajapinta
-from .tyokalut import luokkamaare, mittaa
+from .sivutus import SivutettuHaku
+from .tyokalut import luokkamaare
 
 
 @dataclass
-class RestYhteys(JsonYhteys):
+class RestYhteys(SivutettuHaku, JsonYhteys):
   '''
   Django-Rest-Framework -pohjainen, JSON-muotoinen yhteys.
 
   Tunnistautuminen `avaimen` avulla: lisätään otsake
   `Authorization: Token xxx`, mikäli `avain` on annettu.
 
-  Lisätty toteutukset sivutetun datan (`results` + `next`) hakuun:
-  - `nouda_sivutettu_data(polku)`: kootaan kaikki tulokset
-  - `tuota_sivutettu_data(polku)`: tuotetaan dataa sivu kerrallaan.
-
   Lisätty periytetty (REST-) `Rajapinta`-luokka.
   '''
   avain: str = None
-
-  tulokset_avain = 'results'
-  seuraava_sivu_avain = 'next'
-
-  valittu_sivu_avain = None
-  ensimmainen_sivu = 1
 
   tunnistautuminen = None
 
@@ -40,6 +38,7 @@ class RestYhteys(JsonYhteys):
 
       @luokkamaare
       def rajapinta_pk(cls):
+        # pylint: disable=no-self-argument
         if cls.rajapinta.endswith('/'):
           return cls.rajapinta + '%(pk)s/'
         else:
@@ -92,54 +91,5 @@ class RestYhteys(JsonYhteys):
       **(self.tunnistautuminen or {}),
     }
     # async def pyynnon_otsakkeet
-
-  async def tuota_sivutettu_data(
-    self,
-    polku: str,
-    *,
-    params: dict = None,
-    **kwargs
-  ) -> AsyncIterable:
-    osoite = self.palvelin + polku
-    while True:
-      sivullinen = await self.nouda_data(
-        osoite,
-        suhteellinen=False,
-        params=params or {},
-        **kwargs
-      )
-      if self.tulokset_avain in sivullinen:
-        for tulos in sivullinen[self.tulokset_avain]:
-          yield tulos
-        if self.seuraava_sivu_avain:
-          osoite = sivullinen.get(self.seuraava_sivu_avain)
-          # Ei lisätä parametrejä uudelleen `next`-sivun
-          # osoitteeseen.
-          params = None
-        elif self.valittu_sivu_avain \
-        and sivullinen[self.tulokset_avain]:
-          params = params or {}
-          sivu = params.get(self.valittu_sivu_avain)
-          params[self.valittu_sivu_avain] = (
-            int(sivu or self.ensimmainen_sivu) + 1
-          )
-        else:
-          break
-        if osoite is None:
-          break
-          # if osoite is None
-      else:
-        yield sivullinen
-        break
-      # while True
-    # async def tuota_sivutettu_data
-
-  @mittaa
-  async def nouda_sivutettu_data(self, polku, **kwargs):
-    data = []
-    async for tulos in self.tuota_sivutettu_data(polku, **kwargs):
-      data.append(tulos)
-    return data
-    # async def nouda_sivutettu_data
 
   # class RestYhteys
