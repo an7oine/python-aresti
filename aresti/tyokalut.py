@@ -1,3 +1,4 @@
+from dataclasses import dataclass, is_dataclass
 import functools
 from time import time
 
@@ -10,6 +11,16 @@ def mittaa(f):
   kulunut aika.
 
   Ohitetaan, jos `self.mittaa_pyynnot` on tyhjä.
+
+  Käyttö seuraavasti:
+  >>> class Luokka
+  ...   @mittaa
+  ...   async def metodi(self):
+  ...     await asyncio.sleep(10)
+  ...   def mittaa_pyynnot(self, args: Sequence, aika: float):
+  ...     print('Kulunut aika:', aika)
+  >>>
+  >>> await Luokka().metodi()  # Kulunut aika -tuloste.
   '''
   # pylint: disable=invalid-name
   @functools.wraps(f)
@@ -29,6 +40,19 @@ def mittaa(f):
 
 
 def kaanna_poikkeus(f):
+  '''
+  Käännä metodin aikana nousevat poikkeukset `self.Poikkeus`-tyyppisiksi.
+
+  Käyttö seuraavasti:
+  >>> class Luokka:
+  ...   class Poikkeus(Exception):
+  ...     pass
+  ...   @kaanna_poikkeus
+  ...   def metodi(self):
+  ...     raise RuntimeError
+  >>>
+  >>> Luokka().metodi()  # Nostaa `Luokka.Poikkeuksen`.
+  '''
   # pylint: disable=invalid-name
   @functools.wraps(f)
   async def kaannetty(self, *args, **kwargs):
@@ -44,29 +68,55 @@ def kaanna_poikkeus(f):
 class ei_syotetty:
   ''' Arvo, jota ei syötetty. Käyttäytyy kuten ei olisikaan. '''
   # pylint: disable=invalid-name
+
   EI_SYOTETTY = None
+
   def __new__(cls):
     if cls.EI_SYOTETTY is None:
       cls.EI_SYOTETTY = super().__new__(cls)
     return cls.EI_SYOTETTY
+
   def __mul__(self, arg):
     return self
+
   def __bool__(self):
     return False
+
   def __or__(self, arg):
     return arg
+
   def __and__(self, arg):
     return False
+
   def __not__(self):
     return True
+
   def __iter__(self):
     return ().__iter__()
+
   def __repr__(self):
     return '<ei syötetty>'
+
   # class ei_syotetty
 
 
 class luokka_tai_oliometodi:
+  '''
+  Metodi, joka toimii eri tavalla kutsuttaessa luokan tai olion jäsenenä.
+
+  Käyttö seuraavasti:
+  >>> class Luokka:
+  ...   @luokka_tai_oliometodi
+  ...   def metodi(cls):
+  ...     print('Kutsuttiin luokalle', cls)
+  ...   @metodi.oliometodi
+  ...   def metodi(self):
+  ...     print('Kutsuttiin oliolle', self)
+  >>>
+  >>> Luokka.metodi()  # Ylempi tuloste.
+  >>> Luokka().metodi()  # Alempi tuloste.
+  '''
+  # pylint: disable=invalid-name
 
   def __init__(self, luokkametodi=None, oliometodi=None):
     self._luokkametodi = luokkametodi
@@ -93,6 +143,18 @@ class luokka_tai_oliometodi:
 
 
 class luokkamaare:
+  '''
+  Määreenä käytettävä luokkametodi.
+
+  Käyttö seuraavasti:
+  >>> class Luokka:
+  ...   @luokkamaare
+  ...   def maare(cls):
+  ...     return 42
+  >>>
+  >>> assert Luokka.maare == 42
+  '''
+  # pylint: disable=invalid-name
 
   def __init__(self, luokkametodi):
     self.luokkametodi = luokkametodi
@@ -101,3 +163,88 @@ class luokkamaare:
     return self.luokkametodi(cls)
 
   # class luokkamaare
+
+
+@dataclass
+class periyta:
+  '''
+  Periytä luokan määreenä määritelty sisempi luokka ulommasta.
+
+  Mikäli joko sisempi tai ulompi luokka on dataluokka, myös tulos on.
+  Tällöin alustuksessa käytetään `dataclass(kw_only=True)`-vipua.
+
+  Käyttö seuraavasti:
+  >>> class Ulompi:
+  ...   @periyta
+  ...   class Sisempi:
+  ...     ...
+  >>>
+  >>> assert issubclass(Ulompi.Sisempi, Ulompi)
+  '''
+  # pylint: disable=invalid-name
+
+  periytettava: type
+
+  def __get__(self, _self, cls=None):
+    @functools.wraps(self.periytettava, updated=())
+    class periytetty(self.periytettava, cls or type(_self)):
+      pass
+    if any(is_dataclass(kls) for kls in periytetty.__bases__):
+      periytetty = dataclass(kw_only=True)(periytetty)
+    return periytetty
+    # def __get__
+
+  # class periyta
+
+
+class Rutiini:
+  '''
+  Datatyypin oletusarvona käytettävä kuvaaja silloin, kun tyyppinä on metodi.
+
+  Käyttö seuraavasti:
+  >>> from dataclasses import dataclass, field
+  >>> from typing import Protocol
+  >>>
+  >>> class Kahva(Protocol):
+  ...   async def __call__(self, *, avain: str, arvo: int):
+  ...     ...
+  >>>
+  >>> class Oletuskahva(Kahva, Rutiini):
+  ...   @staticmethod  # Huomaa, että `self` viittaa tässä `Dataluokkaan`.
+  ...   async def __call__(self, *, avain: str, arvo: int):
+  ...     print(avain, '=', arvo)
+  >>>
+  >>> @dataclass
+  ... class Dataluokka:
+  ...   kahva: Kahva = field(default=Oletuskahva())
+  ...   async def tulosta(self):
+  ...     await self.kahva(avain=self.__class__.__name__, arvo=id(self))
+  >>>
+  >>> async def mukautettu(self, avain, arvo):
+  ...   print('asetetaan avaimeen', avain, 'arvo', arvo)
+  >>>
+  >>> await Dataluokka().tulosta()  # Vakiotuloste.
+  >>> await Dataluokka(kahva=mukautettu).tulosta()  # Mukautettu tuloste.
+  '''
+  _name: str
+
+  def __set_name__(self, owner, name):
+    self._name = "_" + name
+
+  def __get__(self, instance, cls=None):
+    return functools.partial(
+      getattr(instance, self._name, self),
+      self=instance
+    )
+    # def __get__
+
+  def __set__(self, instance, value):
+    setattr(instance, self._name, value)
+    # def __set__
+
+  @staticmethod
+  def __call__(self, *args, **kwargs):
+    # pylint: disable=bad-staticmethod-argument
+    raise NotImplementedError
+
+  # class rutiini
