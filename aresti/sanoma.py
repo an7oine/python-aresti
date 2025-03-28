@@ -72,18 +72,36 @@ class RestSanoma(RestKentta):
             kentta.name, tyyppi.lahteva, tyyppi.saapuva
           )
         elif lahde is Union:
+          # Käsitellään Optional[tyyppi] automaattisesti.
+          # Huomaa, että muut mahdolliset `Union`-tyypit vaativat käsin
+          # määritellyn `lahteva`- ja `saapuva`-rutiinin.
           try:
+            assert type(None) in get_args(tyyppi)
             tyyppi, = {
               tyyppi
               for tyyppi in get_args(tyyppi)
               if isinstance(tyyppi, type)
               and issubclass(tyyppi, RestKentta)
             }
-          except ValueError:
+          except (AssertionError, ValueError):
             pass
           else:
             yield kentta.name, (
-              kentta.name, tyyppi.lahteva, tyyppi.saapuva
+              kentta.name,
+              functools.partial(
+                lambda tl, lahteva: (
+                  tl(lahteva) if lahteva not in (None, ei_syotetty)
+                  else lahteva
+                ),
+                tyyppi.lahteva,
+              ),
+              functools.partial(
+                lambda ts, saapuva: (
+                  ts(saapuva) if saapuva not in (None, ei_syotetty)
+                  else saapuva
+                ),
+                tyyppi.saapuva,
+              )
             )
         elif lahde is list:
           try:
