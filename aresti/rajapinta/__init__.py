@@ -115,6 +115,20 @@ class Rajapinta(metaclass=RajapintaMeta):
       return [self._tulkitse_saapuva(d) for d in data]
     # async def nouda
 
+  async def otsakkeet(self, **params):
+    return await self.yhteys.nouda_otsakkeet(
+      self.Meta.rajapinta,
+      params=params,
+    )
+    # async def otsakkeet
+
+  async def meta(self, **params):
+    return await self.yhteys.nouda_meta(
+      self.Meta.rajapinta,
+      params=params,
+    )
+    # async def meta
+
   async def lisaa(
     self,
     data: Optional[Syote] = None,
