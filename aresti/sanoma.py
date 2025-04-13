@@ -72,11 +72,14 @@ class RestSanoma(RestKentta):
             kentta.name, tyyppi.lahteva, tyyppi.saapuva
           )
         elif lahde is Union:
-          # Käsitellään Optional[tyyppi] automaattisesti.
+          # Käsitellään Optional[tyyppi], Valinnainen[tyyppi] automaattisesti.
           # Huomaa, että muut mahdolliset `Union`-tyypit vaativat käsin
           # määritellyn `lahteva`- ja `saapuva`-rutiinin.
           try:
-            assert type(None) in get_args(tyyppi)
+            assert (
+              type(None) in get_args(tyyppi)
+              or type(ei_syotetty) in get_args(tyyppi)
+            )
             tyyppi, = {
               tyyppi
               for tyyppi in get_args(tyyppi)

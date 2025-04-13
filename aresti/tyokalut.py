@@ -1,6 +1,7 @@
 from dataclasses import dataclass, is_dataclass
 import functools
 from time import time
+from typing import TypeVar, Union
 
 from aiohttp import ClientError
 
@@ -98,6 +99,9 @@ class ei_syotetty:
     return '<ei syötetty>'
 
   # class ei_syotetty
+
+
+Valinnainen = Union[TypeVar('T'), type(ei_syotetty)]
 
 
 class luokka_tai_oliometodi:
