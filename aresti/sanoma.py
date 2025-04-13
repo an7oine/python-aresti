@@ -27,6 +27,30 @@ class RestKentta:
   def saapuva(cls, saapuva):
     return saapuva
 
+  @classmethod
+  def __get_pydantic_core_schema__(
+    # Huomaa, että tyypitys on todellisuudessa Pydantic-sidonnainen.
+    # Tässä ei vaadita Pydanticin asennusta käännöksenaikaisesti.
+    cls, source: type[Any], handler: Callable
+  ) -> Any:
+    '''
+    Oletustoteutuksena REST-kentälle palautetaan ensimmäinen peritylle luokalle
+    tiedossa oleva Pydantic-skeema.
+
+    Mikäli tällaista ei ole, nostetaan Pydanticin vakiopoikkeus.
+    '''
+    from pydantic.errors import PydanticSchemaGenerationError
+    try:
+      return handler(source)
+    except PydanticSchemaGenerationError:
+      for kls in source.__mro__:
+        try:
+          return handler(kls)
+        except PydanticSchemaGenerationError:
+          pass
+      raise
+    # def __get_pydantic_core_schema__
+
   # class RestKentta
 
 

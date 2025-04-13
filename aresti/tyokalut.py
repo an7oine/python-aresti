@@ -1,7 +1,7 @@
 from dataclasses import dataclass, is_dataclass
 import functools
 from time import time
-from typing import TypeVar, Union
+from typing import Any, TypeVar, Union
 
 from aiohttp import ClientError
 
@@ -97,6 +97,16 @@ class ei_syotetty:
 
   def __repr__(self):
     return '<ei syötetty>'
+
+  @classmethod
+  def __get_pydantic_core_schema__(cls, source_type: Any, *args, **kwargs):
+    ''' Pydantic-tietotyyppi, mikäli pydantic on asennettu. '''
+    from pydantic_core import core_schema
+    return core_schema.is_instance_schema(
+      cls=source_type,
+      serialization=core_schema.to_string_ser_schema(),
+    )
+    # def __get_pydantic_core_schema__
 
   # class ei_syotetty
 
@@ -195,6 +205,17 @@ class periyta:
       pass
     if any(is_dataclass(kls) for kls in periytetty.__bases__):
       periytetty = dataclass(kw_only=True)(periytetty)
+    # Muodosta Pydantic-dataluokka, mikäli jokin kantaluokka on tällainen.
+    try:
+      from pydantic.dataclasses import (
+        dataclass as pydantic_dataclass,
+        is_pydantic_dataclass,
+      )
+    except ImportError:
+      pass
+    else:
+      if any(is_pydantic_dataclass(kls) for kls in periytetty.__bases__):
+        periytetty = pydantic_dataclass(periytetty)
     return periytetty
     # def __get__
 
