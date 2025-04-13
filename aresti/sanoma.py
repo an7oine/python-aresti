@@ -1,7 +1,9 @@
-from dataclasses import fields
+from dataclasses import Field, fields
 import enum
 import functools
 from typing import (
+  Any,
+  Callable,
   ClassVar,
   get_args,
   get_origin,
@@ -54,6 +56,80 @@ class RestSanoma(RestKentta):
   # <sanoma-avain>: <rest-avain>
   _rest: ClassVar[dict]
 
+  @classmethod
+  def __poimi_rest(cls, tyyppi: Any) -> tuple[Callable, Callable]:
+    lahde = get_origin(tyyppi)
+    if isinstance(lahde or tyyppi, type) \
+    and issubclass(lahde or tyyppi, RestKentta):
+      return tyyppi.lahteva, tyyppi.saapuva
+    elif lahde is Union:
+      # Käsitellään Optional[tyyppi] ja Valinnainen[tyyppi]
+      # automaattisesti.
+      # Huomaa, että muut mahdolliset `Union`-tyypit vaativat käsin
+      # määritellyn `lahteva`- ja `saapuva`-rutiinin.
+      try:
+        assert (
+          type(None) in get_args(tyyppi)
+          or type(ei_syotetty) in get_args(tyyppi)
+        )
+        tyyppi, = {
+          tyyppi
+          for tyyppi in get_args(tyyppi)
+          if tyyppi is not type(None) and tyyppi is not type(ei_syotetty)
+        }
+      except (AssertionError, ValueError):
+        pass
+      else:
+        try:
+          _lahteva, _saapuva = cls.__poimi_rest(tyyppi)
+        except TypeError:
+          pass
+        else:
+          return (
+            functools.partial(
+              lambda tl, lahteva: (
+                tl(lahteva) if lahteva not in (None, ei_syotetty)
+                else lahteva
+              ),
+              _lahteva,
+            ),
+            functools.partial(
+              lambda ts, saapuva: (
+                ts(saapuva) if saapuva not in (None, ei_syotetty)
+                else saapuva
+              ),
+              _saapuva,
+            )
+          )
+    elif lahde is list:
+      try:
+        tyyppi, = {
+          tyyppi
+          for tyyppi in get_args(tyyppi)
+          if isinstance(tyyppi, type)
+          and issubclass(tyyppi, RestKentta)
+        }
+      except ValueError:
+        pass
+      else:
+        try:
+          _lahteva, _saapuva = cls.__poimi_rest(tyyppi)
+        except TypeError:
+          pass
+        else:
+          return (
+            functools.partial(
+              lambda tl, lahteva: list(map(tl, lahteva)),
+              _lahteva,
+            ),
+            functools.partial(
+              lambda ts, saapuva: list(map(ts, saapuva)),
+              _saapuva,
+            )
+          )
+      # elif lahde is list
+    # def __poimi_rest -> tuple[Callable, Callable]
+
   @luokkamaare
   def _rest(cls):
     '''
@@ -65,69 +141,8 @@ class RestSanoma(RestKentta):
       tyypit = get_type_hints(cls)
       for kentta in fields(cls):
         tyyppi = tyypit.get(kentta.name, kentta.type)
-        lahde = get_origin(tyyppi)
-        if isinstance(lahde or tyyppi, type) \
-        and issubclass(lahde or tyyppi, RestKentta):
-          yield kentta.name, (
-            kentta.name, tyyppi.lahteva, tyyppi.saapuva
-          )
-        elif lahde is Union:
-          # Käsitellään Optional[tyyppi], Valinnainen[tyyppi] automaattisesti.
-          # Huomaa, että muut mahdolliset `Union`-tyypit vaativat käsin
-          # määritellyn `lahteva`- ja `saapuva`-rutiinin.
-          try:
-            assert (
-              type(None) in get_args(tyyppi)
-              or type(ei_syotetty) in get_args(tyyppi)
-            )
-            tyyppi, = {
-              tyyppi
-              for tyyppi in get_args(tyyppi)
-              if isinstance(tyyppi, type)
-              and issubclass(tyyppi, RestKentta)
-            }
-          except (AssertionError, ValueError):
-            pass
-          else:
-            yield kentta.name, (
-              kentta.name,
-              functools.partial(
-                lambda tl, lahteva: (
-                  tl(lahteva) if lahteva not in (None, ei_syotetty)
-                  else lahteva
-                ),
-                tyyppi.lahteva,
-              ),
-              functools.partial(
-                lambda ts, saapuva: (
-                  ts(saapuva) if saapuva not in (None, ei_syotetty)
-                  else saapuva
-                ),
-                tyyppi.saapuva,
-              )
-            )
-        elif lahde is list:
-          try:
-            tyyppi, = {
-              tyyppi
-              for tyyppi in get_args(tyyppi)
-              if isinstance(tyyppi, type)
-              and issubclass(tyyppi, RestKentta)
-            }
-          except ValueError:
-            pass
-          else:
-            yield kentta.name, (
-              kentta.name,
-              functools.partial(
-                lambda tl, lahteva: list(map(tl, lahteva)),
-                tyyppi.lahteva,
-              ),
-              functools.partial(
-                lambda ts, saapuva: list(map(ts, saapuva)),
-                tyyppi.saapuva,
-              )
-            )
+        if (lahteva_saapuva := cls.__poimi_rest(tyyppi)) is not None:
+          yield kentta.name, (kentta.name, *lahteva_saapuva)
         # for kentta in fields
       # def _kentat
     return dict(_kentat())
