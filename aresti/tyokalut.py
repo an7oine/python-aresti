@@ -1,4 +1,4 @@
-from dataclasses import dataclass, is_dataclass
+from dataclasses import dataclass, is_dataclass, field
 import functools
 from time import time
 from typing import Any, TypeVar, Union
@@ -179,7 +179,7 @@ class luokkamaare:
   # class luokkamaare
 
 
-@dataclass
+@dataclass(kw_only=True)
 class periyta:
   '''
   Periytä luokan määreenä määritelty sisempi luokka ulommasta.
@@ -198,13 +198,42 @@ class periyta:
   # pylint: disable=invalid-name
 
   periytettava: type
+  kwargs: dict = field(default_factory=dict)
+
+  def __new__(cls, periytettava=ei_syotetty, /, **kwargs):
+    '''
+    Poimitaan muut kuin käsin määritellyt kentät erilliseen
+    `kwargs`-sanakirjaan olion tietoihin.
+
+    Vrt. https://stackoverflow.com/a/63291704.
+    '''
+    if periytettava is ei_syotetty:
+      return functools.partial(cls, **kwargs)
+    else:
+      kwargs['periytettava'] = periytettava
+
+    try:
+      initializer = cls.__initializer
+    except AttributeError:
+      cls.__initializer = initializer = cls.__init__
+      cls.__init__ = lambda *a, **k: None
+
+    _kwargs = {}
+    for name in list(kwargs.keys()):
+      if name not in cls.__annotations__:
+        _kwargs[name] = str(kwargs.pop(name))
+    ret = super().__new__(cls)
+    initializer(ret, **kwargs)
+    ret.kwargs = _kwargs
+    return ret
+    # def __new__
 
   def __get__(self, _self, cls=None):
     @functools.wraps(self.periytettava, updated=())
     class periytetty(self.periytettava, cls or type(_self)):
       pass
     if any(is_dataclass(kls) for kls in periytetty.__bases__):
-      periytetty = dataclass(kw_only=True)(periytetty)
+      periytetty = dataclass(**self.kwargs)(periytetty)
     # Muodosta Pydantic-dataluokka, mikäli jokin kantaluokka on tällainen.
     try:
       from pydantic.dataclasses import (
