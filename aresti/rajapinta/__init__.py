@@ -58,18 +58,19 @@ class Rajapinta(metaclass=RajapintaMeta):
 
   @dataclass
   class Syote(RestSanoma):
-    @luokkamaare
-    def Paivitys(cls):
-      '''
-      Tietorakenne olemassaolevan tietueen päivittämiseen.
+    pass
 
-      Oletuksena käytetään samaa Syötettä kuin uudelle tietueelle.
-      '''
-      return cls
-      # def Paivitys
-    # class Syote
+  @luokkamaare
+  def Paivitys(cls):
+    '''
+    Tietorakenne olemassaolevan tietueen päivittämiseen.
 
-  @dataclass
+    Oletuksena käytetään samaa Syötettä kuin uudelle tietueelle.
+    '''
+    return cls.Syote
+    # def Paivitys
+
+  @dataclass(kw_only=True)
   class Tuloste(RestSanoma):
     pass
 
@@ -160,7 +161,7 @@ class Rajapinta(metaclass=RajapintaMeta):
         'Anna joko syöte tai `kwargs`.'
       )
     elif kwargs:
-      data = self.Syote.Paivitys(**kwargs)
+      data = self.Paivitys(**kwargs)
     return self._tulkitse_saapuva(
       await self.yhteys.muuta_data(
         self.Meta.rajapinta_pk % {'pk': pk},
