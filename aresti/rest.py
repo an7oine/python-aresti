@@ -19,15 +19,8 @@ class RestYhteys(SivutettuHaku, JsonYhteys):
   '''
   Django-Rest-Framework -pohjainen, JSON-muotoinen yhteys.
 
-  Tunnistautuminen `avaimen` avulla: lisätään otsake
-  `Authorization: Token xxx`, mikäli `avain` on annettu.
-
   Lisätty periytetty (REST-) `Rajapinta`-luokka.
   '''
-  avain: str = None
-
-  tunnistautuminen = None
-
   class Rajapinta(Rajapinta):
 
     class Meta(Rajapinta.Meta):
@@ -70,26 +63,5 @@ class RestYhteys(SivutettuHaku, JsonYhteys):
       # def nouda
 
     # class Rajapinta
-
-  def __post_init__(self):
-    try:
-      # pylint: disable=no-member
-      super_post_init = super().__post_init__
-    except:
-      pass
-    else:
-      super_post_init()
-    if self.avain is not None:
-      self.tunnistautuminen = {
-        'Authorization': f'Token {self.avain}'
-      }
-    # def __post_init__
-
-  async def pyynnon_otsakkeet(self, **kwargs):
-    return {
-      **await super().pyynnon_otsakkeet(**kwargs),
-      **(self.tunnistautuminen or {}),
-    }
-    # async def pyynnon_otsakkeet
 
   # class RestYhteys

@@ -21,6 +21,13 @@ class Tunnistautuminen(AsynkroninenYhteys):
       # else
     # def __post_init__
 
+  async def pyynnon_otsakkeet(self, **kwargs):
+    return {
+      **await super().pyynnon_otsakkeet(**kwargs),
+      **(self.tunnistautuminen or {}),
+    }
+    # async def pyynnon_otsakkeet
+
   # class Tunnistautuminen
 
 
