@@ -5,12 +5,12 @@ class SuodatettuRajapinta(Rajapinta):
   ''' Noudettavien tietueiden suodatus GET-parametrien mukaan. '''
 
   class Meta(Rajapinta.Meta):
-    suodatusehdot: type
+    Suodatus: type
 
   def nouda(self, pk=None, **suodatusehdot):
     return super().nouda(
       pk=pk,
-      **self.Meta.suodatusehdot(**suodatusehdot).lahteva(),
+      **self.Meta.Suodatus(**suodatusehdot).lahteva(),
     )
     # def nouda
 
@@ -29,7 +29,7 @@ class LuettelomuotoinenRajapinta(SuodatettuRajapinta):
     async def _nouda():
       for data in await self.yhteys.nouda_data(
         self.Meta.rajapinta,
-        params=self.Meta.suodatusehdot(**suodatusehdot).lahteva(),
+        params=self.Meta.Suodatus(**suodatusehdot).lahteva(),
       ):
         yield self._tulkitse_saapuva(data)
     return _nouda()

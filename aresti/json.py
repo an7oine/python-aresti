@@ -1,5 +1,7 @@
 import json
-import pprint
+from typing import Any, Sequence
+
+import aiohttp
 
 from .yhteys import AsynkroninenYhteys
 
@@ -7,75 +9,32 @@ from .yhteys import AsynkroninenYhteys
 class JsonYhteys(AsynkroninenYhteys):
   ''' JSON-muotoista dataa lähettävä ja vastaanottava yhteys. '''
 
-  async def pyynnon_otsakkeet(self, **kwargs):
-    return {
-      **await super().pyynnon_otsakkeet(**kwargs),
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    }
-    # async def pyynnon_otsakkeet
+  # Sanoman otsakkeina annettavat sisältötyypit.
+  accept: str = 'application/json'
+  content_type: str = 'application/json'
 
-  class Poikkeus(AsynkroninenYhteys.Poikkeus):
+  # JSON-sisältönä tulkittavat sisältötyypit.
+  json_sisalto: Sequence[str] = (
+    'application/json',
+    'text/json',
+  )
 
-    def __init__(
-      self,
-      sanoma=None,
-      *,
-      json=None,
-      teksti='',
-      **kwargs,
-    ):
-      # pylint: disable=redefined-outer-name
-      super().__init__(sanoma=sanoma, **kwargs)
-      self.json = json
-      self.teksti = teksti
+  async def tulkitse_data(
+    self,
+    sanoma: aiohttp.ClientResponse
+  ) -> Any:
+    ''' Tulkitse data JSON-muodossa. '''
+    if sanoma.content_type.split('+')[0] not in self.json_sisalto:
+      return await super().tulkitse_data(sanoma)
+    return await sanoma.json()
+    # async def tulkitse_data
 
-    def __str__(self):
-      return pprint.pformat(self.json or self.teksti)
-
-    # class Poikkeus
-
-  async def poikkeus(self, sanoma):
-    if sanoma.content_type == 'application/json':
-      poikkeus = self.Poikkeus(
-        sanoma,
-        json=await sanoma.json(),
-      )
-    elif sanoma.content_type.startswith('text/'):
-      poikkeus = self.Poikkeus(
-        sanoma,
-        teksti=await sanoma.text(),
-      )
-    else:
-      return await super().poikkeus(sanoma)
-    if self.debug and sanoma.status >= 400:
-      print(poikkeus)
-    return poikkeus
-    # async def poikkeus
-
-  async def _tulkitse_sanoma(self, metodi, sanoma):
-    if sanoma.status >= 400:
-      raise await self.poikkeus(sanoma)
-    try:
-      return await sanoma.json()
-    except Exception:
-      return await super()._tulkitse_sanoma(metodi, sanoma)
-    # async def _tulkitse_sanoma
-
-  async def lisaa_data(self, polku, data, **kwargs):
-    return await super().lisaa_data(
-      polku,
-      json.dumps(data),
-      **kwargs
-    )
-    # async def lisaa_data
-
-  async def muuta_data(self, polku, data, **kwargs):
-    return await super().muuta_data(
-      polku,
-      json.dumps(data),
-      **kwargs
-    )
-    # async def muuta_data
+  async def muodosta_data(
+    self,
+    data: Any
+  ) -> bytes:
+    ''' Muodota data XML-elementin mukaan. '''
+    return json.dumps(data)
+    # async def _tulkitse_data
 
   # class JsonYhteys

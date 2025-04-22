@@ -7,7 +7,7 @@ from typing import Optional, Union
 
 from ..yhteys import AsynkroninenYhteys
 from ..sanoma import RestSanoma
-from ..tyokalut import luokkamaare
+from ..tyokalut import ei_syotetty, luokkamaare, periyta, Valinnainen
 
 
 class RajapintaMeta(type):
@@ -58,7 +58,7 @@ class Rajapinta(metaclass=RajapintaMeta):
 
   @dataclass
   class Syote(RestSanoma):
-    pass
+    ''' Lähtevän datan tietorakenne. '''
 
   @luokkamaare
   def Paivitys(cls):
@@ -72,17 +72,27 @@ class Rajapinta(metaclass=RajapintaMeta):
 
   @dataclass(kw_only=True)
   class Tuloste(RestSanoma):
-    pass
+    ''' Saapuvan datan tietorakenne. '''
 
   class Meta:
+    ''' Rajapinnan metatiedot. '''
     # Tiedonvaihtoon käytetty URL, esim. /api/kioski/
     rajapinta: str
-    rajapinta_pk: Optional[str] = None  # /api/kioski/%(pk)s/
+
+    # Tietuekohtaiseen tiedonvaihtoon käytetty URL,
+    # oletuksena {rajapinta}/%(pk)s.
+    rajapinta_pk: Optional[str] = None
+
+    # Primääriavain tietueen kentissä,
+    pk: str = 'id'
+
+    # class Meta
 
   def __call__(self, *args, **kwargs):
     return self.Syote(*args, **kwargs)
 
   def _tulkitse_saapuva(self, saapuva):
+    ''' Tulkitse saapuvan datan sisältämä sanoma. '''
     if not isinstance(saapuva, Mapping):
       raise TypeError(
         f'Noudettu data ei ole kuvaus: {type(saapuva)!r}!'
@@ -91,6 +101,7 @@ class Rajapinta(metaclass=RajapintaMeta):
     # def _tulkitse_saapuva
 
   def _tulkitse_lahteva(self, lahteva):
+    ''' Muodosta lähtevä data sanomalle. '''
     return lahteva.lahteva()
     # def _tulkitse_lahteva
 

@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 import pprint
-from typing import Optional
+from typing import Any, Optional
 
 import aiohttp
 
@@ -34,6 +34,9 @@ class AsynkroninenYhteys:
   debug: bool = False
   mittaa_pyynnot: Optional[bool] = None
 
+  accept: Optional[str] = None
+  content_type: Optional[str] = None
+
   def __post_init__(self):
     # pylint: disable=attribute-defined-outside-init
     self._istunto_lukitus = asyncio.Lock()
@@ -56,33 +59,72 @@ class AsynkroninenYhteys:
       self._istunto_avoinna = istunto_avoinna
     # async def __aexit__
 
+  @dataclass(kw_only=True)
   class Poikkeus(RuntimeError):
-    def __init__(self, *, sanoma=None, status=None, data=None):
-      status = status or getattr(sanoma, 'status', None) or 0
-      super().__init__(f'Status {status}')
-      self.sanoma = sanoma
-      self.status = status
-      self.data = data
-      # def __init__
+    sanoma: Optional[aiohttp.ClientResponse] = None
+    status: int = 0
+    data: Optional[Any] = None
+    teksti: Optional[str] = None
+
+    def __post_init__(self):
+      super().__init__(f'Status {self.status}')
+      # def __post_init__
+
     def __str__(self):
-      return f'HTTP {self.status}: {pprint.pformat(self.data)}'
+      if self.teksti:
+        return self.teksti
+      else:
+        return f'HTTP {self.status}: {pprint.pformat(self.data)[:100]}'
+
     # class Poikkeus
 
-  async def poikkeus(self, sanoma):
+  async def poikkeus(
+    self,
+    teksti: Optional[str] = None,
+    *,
+    sanoma: Optional[aiohttp.ClientResponse] = None,
+  ):
+    if sanoma is None:
+      return self.Poikkeus(teksti=teksti)
     poikkeus = self.Poikkeus(
       sanoma=sanoma,
-      data=await sanoma.read(),
+      status=sanoma.status,
+      data=await self.tulkitse_data(sanoma),
     )
     if self.debug and sanoma.status >= 400:
       print(poikkeus)
     return poikkeus
     # async def poikkeus
 
-  async def pyynnon_otsakkeet(self, **kwargs):
+  async def pyynnon_otsakkeet(self, **kwargs) -> dict[str, Optional[str]]:
     # pylint: disable=unused-argument
-    return {}
+    return {
+      **(
+        {'Accept': self.accept} if self.accept else {}
+      ),
+      **(
+        {'Content-Type': self.content_type} if self.content_type else {}
+      ),
+    }
+    # async def pyynnon_otsakkeet -> dict[str, Optional[str]]
 
-  async def _pyynnon_otsakkeet(self, **kwargs):
+  async def tulkitse_data(
+    self,
+    sanoma: aiohttp.ClientResponse
+  ) -> Any:
+    return await sanoma.read()
+    # async def tulkitse_data
+
+  async def muodosta_data(
+    self,
+    data: Any
+  ) -> bytes:
+    return bytes(data)
+    # async def muodosta_data
+
+  async def _pyynnon_otsakkeet(
+    self, **kwargs
+  ) -> dict[str, str]:
     return {
       avain: arvo
       for avain, arvo in (await self.pyynnon_otsakkeet(**kwargs)).items()
@@ -90,16 +132,29 @@ class AsynkroninenYhteys:
     }
     # async def _pyynnon_otsakkeet
 
-  async def _tulkitse_sanoma(self, metodi, sanoma):
+  async def _tulkitse_sanoma(
+    self,
+    metodi: str,
+    sanoma: aiohttp.ClientResponse
+  ) -> Any:
     # pylint: disable=unused-argument
     if sanoma.status >= 400:
-      raise await self.poikkeus(sanoma)
-    return await sanoma.text()
+      raise await self.poikkeus(sanoma=sanoma)
+    try:
+      return await self.tulkitse_data(sanoma)
+    except Exception:
+      return await sanoma.text()
     # async def _tulkitse_sanoma
 
   @kaanna_poikkeus
   @mittaa
-  async def nouda_otsakkeet(self, polku, *, headers=None, **kwargs):
+  async def nouda_otsakkeet(
+    self,
+    polku: str,
+    *,
+    headers: Optional[dict[str, str]] = None,
+    **kwargs
+  ) -> Any:
     async with self._istunto.head(
       self.palvelin + polku,
       #params=kwargs,
@@ -110,13 +165,21 @@ class AsynkroninenYhteys:
       ),
       **kwargs,
     ) as sanoma:
-      return await self._tulkitse_sanoma('HEAD', sanoma)
+      return await self._tulkitse_sanoma(
+        'HEAD', sanoma
+      )
       # async with self._istunto.head
     # async def nouda_otsakkeet
 
   @kaanna_poikkeus
   @mittaa
-  async def nouda_meta(self, polku, *, headers=None, **kwargs):
+  async def nouda_meta(
+    self,
+    polku: str,
+    *,
+    headers: Optional[dict[str, str]] = None,
+    **kwargs
+  ) -> Any:
     async with self._istunto.options(
       self.palvelin + polku,
       #params=kwargs,
@@ -134,8 +197,13 @@ class AsynkroninenYhteys:
   @kaanna_poikkeus
   @mittaa
   async def nouda_data(
-    self, polku, *, suhteellinen=True, headers=None, **kwargs
-  ):
+    self,
+    polku: str,
+    *,
+    suhteellinen: bool = True,
+    headers: Optional[dict[str, str]] = None,
+    **kwargs
+  ) -> Any:
     async with self._istunto.get(
       self.palvelin + polku if suhteellinen else polku,
       #params=kwargs,
@@ -152,7 +220,15 @@ class AsynkroninenYhteys:
 
   @kaanna_poikkeus
   @mittaa
-  async def lisaa_data(self, polku, data, *, headers=None, **kwargs):
+  async def lisaa_data(
+    self,
+    polku: str,
+    data: Any,
+    *,
+    headers: Optional[dict[str, str]] = None,
+    **kwargs
+  ) -> Any:
+    data = await self.muodosta_data(data)
     async with self._istunto.post(
       self.palvelin + polku,
       #params=kwargs,
@@ -171,7 +247,15 @@ class AsynkroninenYhteys:
 
   @kaanna_poikkeus
   @mittaa
-  async def muuta_data(self, polku, data, *, headers=None, **kwargs):
+  async def muuta_data(
+    self,
+    polku: str,
+    data: Any,
+    *,
+    headers: Optional[dict[str, str]] = None,
+    **kwargs
+  ) -> Any:
+    data = await self.muodosta_data(data)
     async with self._istunto.patch(
       self.palvelin + polku,
       #params=kwargs,
@@ -190,7 +274,13 @@ class AsynkroninenYhteys:
 
   @kaanna_poikkeus
   @mittaa
-  async def tuhoa_data(self, polku, *, headers=None, **kwargs):
+  async def tuhoa_data(
+    self,
+    polku: str,
+    *,
+    headers: Optional[dict[str, str]] = None,
+    **kwargs
+  ) -> Any:
     async with self._istunto.delete(
       self.palvelin + polku,
       #params=kwargs,
