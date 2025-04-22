@@ -13,6 +13,7 @@ license = {text = "MIT"}
 requires-python = ">= 3.8"
 dynamic = ["version"]
 dependencies = ["aiohttp"]
+urls = {Repository = "https://github.com/an7oine/python-aresti.git"}
 
-[project.urls]
-Repository = "https://github.com/an7oine/python-aresti.git"
+[project.optional-dependencies]
+xml = ["lxml"]
