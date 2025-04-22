@@ -8,16 +8,16 @@ from typing import (
   Union,
 )
 
-from .json import JsonYhteys
 from .rajapinta import Rajapinta
 from .sivutus import SivutettuHaku
 from .tyokalut import luokkamaare
+from .yhteys import AsynkroninenYhteys
 
 
 @dataclass
-class RestYhteys(SivutettuHaku, JsonYhteys):
+class RestYhteys(SivutettuHaku, AsynkroninenYhteys):
   '''
-  Django-Rest-Framework -pohjainen, JSON-muotoinen yhteys.
+  REST-yhteys: tulosten sivutus ja erilliset rajapinnat.
 
   Lisätty periytetty (REST-) `Rajapinta`-luokka.
   '''

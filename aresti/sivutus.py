@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import AsyncIterable, Optional, Protocol
 
-from .json import JsonYhteys
 from .tyokalut import mittaa, Rutiini
+from .yhteys import AsynkroninenYhteys
 
 
 class SivutetunHaunEdistyminen(Protocol):
@@ -49,7 +49,7 @@ class OletusEdistyminen(SivutetunHaunEdistyminen, Rutiini):
 
 
 @dataclass
-class SivutettuHaku(JsonYhteys):
+class SivutettuHaku(AsynkroninenYhteys):
 
   # Avaimet, joilla tulokset ja seuraava sivu poimitaan sivutetusta datasta.
   tulokset_avain: str = 'results'
@@ -153,4 +153,4 @@ class SivutettuHaku(JsonYhteys):
     return data
     # async def nouda_sivutettu_data
 
-  # class RestYhteys
+  # class SivutettuHaku
