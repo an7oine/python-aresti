@@ -83,6 +83,19 @@ class RestSanoma(RestKentta):
   _rest: ClassVar[dict]
 
   @classmethod
+  def kopioi(cls, lahde: RestSanoma):
+    ''' Kopioi yhteensopivat (samannimiset) kentät lähteestä. '''
+    lahteen_kentat: tuple[str] = tuple(
+      kentta.name for kentta in fields(lahde)
+    )
+    return cls(**{
+      kentta.name: getattr(lahde, kentta.name, ei_syotetty)
+      for kentta in fields(cls)
+      if kentta.name in lahteen_kentat
+    })
+    # def kopioi
+
+  @classmethod
   def __poimi_rest(cls, tyyppi: Any) -> tuple[Callable, Callable]:
     lahde = get_origin(tyyppi)
     if isinstance(lahde or tyyppi, type) \
