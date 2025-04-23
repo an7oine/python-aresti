@@ -34,8 +34,11 @@ class AsynkroninenYhteys:
   debug: bool = False
   mittaa_pyynnot: Optional[bool] = None
 
-  accept: Optional[str] = None
-  content_type: Optional[str] = None
+  # Huom. ei määritellä datakenttinä kantaluokassa.
+  # Python dataclass-toteutus periyttää moninperityn luokan kenttien
+  # oletusarvot väärin kantaluokasta.
+  accept = None
+  content_type = None
 
   def __post_init__(self):
     # pylint: disable=attribute-defined-outside-init
