@@ -24,7 +24,8 @@ class JsonYhteys(AsynkroninenYhteys):
     sanoma: aiohttp.ClientResponse
   ) -> Any:
     ''' Tulkitse data JSON-muodossa. '''
-    if sanoma.content_type.split('+')[0] not in self.json_sisalto:
+    if sanoma.content_type.split('+')[0].split(';')[0] \
+    not in self.json_sisalto:
       return await super().tulkitse_data(sanoma)
     return await sanoma.json()
     # async def tulkitse_data
@@ -33,7 +34,7 @@ class JsonYhteys(AsynkroninenYhteys):
     self,
     data: Any
   ) -> bytes:
-    ''' Muodota data XML-elementin mukaan. '''
+    ''' Muodosta JSON-data sisällön mukaan. '''
     return json.dumps(data)
     # async def _tulkitse_data
 
