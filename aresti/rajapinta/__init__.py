@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Optional, Union
 
+from .hahmo import Hahmo
 from ..yhteys import AsynkroninenYhteys
 from ..sanoma import RestSanoma
 from ..tyokalut import ei_syotetty, luokkamaare, periyta, Valinnainen
@@ -74,6 +75,10 @@ class Rajapinta(metaclass=RajapintaMeta):
   class Tuloste(RestSanoma):
     ''' Saapuvan datan tietorakenne. '''
 
+  @dataclass(kw_only=True)
+  class Hahmo(Hahmo):
+    ''' Sijaishahmo tietueiden käsittelyyn rajapinnassa. '''
+
   class Meta:
     ''' Rajapinnan metatiedot. '''
     # Tiedonvaihtoon käytetty URL, esim. /api/kioski/
@@ -88,8 +93,28 @@ class Rajapinta(metaclass=RajapintaMeta):
 
     # class Meta
 
-  def __call__(self, *args, **kwargs):
-    return self.Syote(*args, **kwargs)
+  def __aiter__(self):
+    ''' Tuota kaikki tulokset asynkronisesti. '''
+    return aiter(self.Hahmo(rajapinta=self))
+    # def __call__
+
+  def __call__(
+    self,
+    tietue: Valinnainen[RestSanoma] = ei_syotetty,
+    *,
+    pk: Valinnainen[Any] = ei_syotetty,
+    **kwargs
+  ):
+    ''' Muodosta sijaishahmo annetuilla avaimilla. '''
+    if tietue is not ei_syotetty and pk is ei_syotetty:
+      pk = getattr(tietue, self.Meta.pk, ei_syotetty)
+    return self.Hahmo(
+      rajapinta=self,
+      tietue=tietue,
+      pk=pk,
+      kwargs=kwargs
+    )
+    # def __call__
 
   def _tulkitse_saapuva(self, saapuva):
     ''' Tulkitse saapuvan datan sisältämä sanoma. '''
