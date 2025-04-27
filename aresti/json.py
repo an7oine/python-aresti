@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import json
 from typing import Any, Sequence
 
@@ -6,6 +7,7 @@ import aiohttp
 from .yhteys import AsynkroninenYhteys
 
 
+@dataclass(kw_only=True)
 class JsonYhteys(AsynkroninenYhteys):
   ''' JSON-muotoista dataa lähettävä ja vastaanottava yhteys. '''
 

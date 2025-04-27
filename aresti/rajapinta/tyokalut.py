@@ -7,9 +7,10 @@ class SuodatettuRajapinta(Rajapinta):
   class Meta(Rajapinta.Meta):
     Suodatus: type
 
-  def nouda(self, pk=None, **suodatusehdot):
+  def nouda(self, **suodatusehdot):
+    if pk := suodatusehdot.pop('pk', None):
+      return super().nouda(pk=pk)
     return super().nouda(
-      pk=pk,
       **self.Meta.Suodatus(**suodatusehdot).lahteva(),
     )
     # def nouda
@@ -55,13 +56,13 @@ class YksittaisenTietueenRajapinta(Rajapinta):
 class VainLukuRajapinta(Rajapinta):
   ''' Vain luku -tyyppinen rajapinta: ei C/U/D-operaatioita. '''
 
-  async def lisaa(self, data, **kwargs):
+  async def lisaa(self, *args, **kwargs):
     raise self.ToimintoEiSallittu
 
-  async def muuta(self, pk, data, **kwargs):
+  async def muuta(self, *args, **kwargs):
     raise self.ToimintoEiSallittu
 
-  async def tuhoa(self, pk):
+  async def tuhoa(self, *args, **kwargs):
     raise self.ToimintoEiSallittu
 
   # class VainLukuRajapinta

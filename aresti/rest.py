@@ -14,7 +14,6 @@ from .tyokalut import luokkamaare
 from .yhteys import AsynkroninenYhteys
 
 
-@dataclass
 class RestYhteys(SivutettuHaku, AsynkroninenYhteys):
   '''
   REST-yhteys: tulosten sivutus ja erilliset rajapinnat.

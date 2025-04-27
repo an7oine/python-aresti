@@ -48,7 +48,7 @@ class OletusEdistyminen(SivutetunHaunEdistyminen, Rutiini):
   # class OletusEdistyminen
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SivutettuHaku(AsynkroninenYhteys):
 
   # Avaimet, joilla tulokset ja seuraava sivu poimitaan sivutetusta datasta.
