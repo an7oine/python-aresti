@@ -17,3 +17,6 @@ urls = {Repository = "https://github.com/an7oine/python-aresti.git"}
 
 [project.optional-dependencies]
 xml = ["lxml"]
+
+[tool.setuptools.packages.find]
+include = ["aresti*"]

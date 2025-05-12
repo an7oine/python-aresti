@@ -28,9 +28,8 @@ class LuettelomuotoinenRajapinta(SuodatettuRajapinta):
       return super().nouda(pk=pk, **suodatusehdot)
 
     async def _nouda():
-      for data in await self.yhteys.nouda_data(
-        self.Meta.rajapinta,
-        params=self.Meta.Suodatus(**suodatusehdot).lahteva(),
+      for data in await self.nouda_rajapinnasta(
+        **self.Meta.Suodatus(**suodatusehdot).lahteva(),
       ):
         yield self._tulkitse_saapuva(data)
     return _nouda()

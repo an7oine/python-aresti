@@ -130,22 +130,21 @@ class Rajapinta(metaclass=RajapintaMeta):
     return lahteva.lahteva()
     # def _tulkitse_lahteva
 
-  async def nouda(
+  def nouda_rajapinnasta(
     self,
     pk: Optional[Union[str, int]] = None,
     **params,
-  ) -> Union[Tuloste, list[Tuloste]]:
+  ) -> list[Tuloste]:
     if pk is not None:
       assert self.Meta.rajapinta_pk is not None
-      data = await self.yhteys.nouda_data(
-        self.Meta.rajapinta_pk % {'pk': pk},
-        params=params,
-      )
+      rajapinta = self.Meta.rajapinta_pk % {'pk': pk}
     else:
-      data = await self.yhteys.nouda_data(
-        self.Meta.rajapinta,
-        params=params,
-      )
+      rajapinta = self.Meta.rajapinta
+    return self.yhteys.nouda_data(rajapinta, params=params)
+    # def nouda_rajapinnasta
+
+  async def nouda(self, **params) -> Union[Tuloste, list[Tuloste]]:
+    data = await self.nouda_rajapinnasta(**params)
     if isinstance(data, Mapping):
       return self._tulkitse_saapuva(data)
     else:
