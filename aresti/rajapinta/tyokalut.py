@@ -4,14 +4,13 @@ from . import Rajapinta
 class SuodatettuRajapinta(Rajapinta):
   ''' Noudettavien tietueiden suodatus GET-parametrien mukaan. '''
 
-  class Meta(Rajapinta.Meta):
-    Suodatus: type
+  Suodatus: type
 
   def nouda(self, **suodatusehdot):
     if pk := suodatusehdot.pop('pk', None):
       return super().nouda(pk=pk)
     return super().nouda(
-      **self.Meta.Suodatus(**suodatusehdot).lahteva(),
+      **self.Suodatus(**suodatusehdot).lahteva(),
     )
     # def nouda
 
@@ -29,7 +28,7 @@ class LuettelomuotoinenRajapinta(SuodatettuRajapinta):
 
     async def _nouda():
       for data in await self.nouda_rajapinnasta(
-        **self.Meta.Suodatus(**suodatusehdot).lahteva(),
+        **self.Suodatus(**suodatusehdot).lahteva(),
       ):
         yield self._tulkitse_saapuva(data)
     return _nouda()
