@@ -3,12 +3,12 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Optional, Union
+from typing import Any, Iterable, Union
 
 from .hahmo import Hahmo
 from ..yhteys import AsynkroninenYhteys
 from ..sanoma import RestSanoma
-from ..tyokalut import ei_syotetty, luokkamaare, periyta, Valinnainen
+from ..tyokalut import ei_syotetty, luokkamaare, Valinnainen
 
 
 class RajapintaMeta(type):
@@ -33,6 +33,7 @@ class RajapintaMeta(type):
   '''
 
   def __new__(mcs, name, bases, attrs, *, oliomaare=None, **kwargs):
+    # pylint: disable=protected-access
     cls = super().__new__(mcs, name, bases, attrs, **kwargs)
     cls.__oliomaare = oliomaare
     return cls
@@ -68,6 +69,7 @@ class Rajapinta(metaclass=RajapintaMeta):
 
     Oletuksena käytetään samaa Syötettä kuin uudelle tietueelle.
     '''
+    # pylint: disable=invalid-name
     return cls.Syote
     # def Paivitys
 
@@ -86,7 +88,7 @@ class Rajapinta(metaclass=RajapintaMeta):
 
     # Tietuekohtaiseen tiedonvaihtoon käytetty URL,
     # oletuksena {rajapinta}/%(pk)s.
-    rajapinta_pk: Optional[str] = None
+    rajapinta_pk: Valinnainen[str] = ei_syotetty
 
     # Primääriavain tietueen kentissä,
     pk: str = 'id'
@@ -132,11 +134,11 @@ class Rajapinta(metaclass=RajapintaMeta):
 
   def nouda_rajapinnasta(
     self,
-    pk: Optional[Union[str, int]] = None,
+    pk: Valinnainen[Union[str, int]] = ei_syotetty,
     **params,
   ) -> list[Tuloste]:
-    if pk is not None:
-      assert self.Meta.rajapinta_pk is not None
+    if pk is not ei_syotetty:
+      assert self.Meta.rajapinta_pk
       rajapinta = self.Meta.rajapinta_pk % {'pk': pk}
     else:
       rajapinta = self.Meta.rajapinta
@@ -167,15 +169,19 @@ class Rajapinta(metaclass=RajapintaMeta):
 
   async def lisaa(
     self,
-    data: Optional[Syote] = None,
+    data: Valinnainen[Syote | Iterable[Syote]] = ei_syotetty,
     **kwargs
   ):
-    if data is not None and kwargs:
+    if data is not ei_syotetty and kwargs:
       raise ValueError(
         'Anna joko syöte tai `kwargs`.'
       )
     elif kwargs:
       data = self.Syote(**kwargs)
+    elif not isinstance(data, RestSanoma) and isinstance(data, Iterable):
+      return [await self.lisaa(alkio) for alkio in data]
+    else:
+      assert isinstance(data, RestSanoma), repr(data)
     return self._tulkitse_saapuva(
       await self.yhteys.lisaa_data(
         self.Meta.rajapinta,
@@ -187,16 +193,18 @@ class Rajapinta(metaclass=RajapintaMeta):
   async def muuta(
     self,
     pk: Union[str, int],
-    data: Optional[Syote] = None,
+    data: Valinnainen[Syote] = ei_syotetty,
     **kwargs
   ):
-    assert self.Meta.rajapinta_pk is not None
-    if data is not None and kwargs:
+    assert self.Meta.rajapinta_pk
+    if data is not ei_syotetty and kwargs:
       raise ValueError(
         'Anna joko syöte tai `kwargs`.'
       )
     elif kwargs:
       data = self.Paivitys(**kwargs)
+    else:
+      assert isinstance(data, RestSanoma), repr(data)
     return self._tulkitse_saapuva(
       await self.yhteys.muuta_data(
         self.Meta.rajapinta_pk % {'pk': pk},
@@ -209,7 +217,7 @@ class Rajapinta(metaclass=RajapintaMeta):
     self,
     pk: Union[str, int],
   ):
-    assert self.Meta.rajapinta_pk is not None
+    assert self.Meta.rajapinta_pk
     return self._tulkitse_saapuva(
       await self.yhteys.tuhoa_data(
         self.Meta.rajapinta_pk % {'pk': pk},

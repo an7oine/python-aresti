@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import (
   AsyncIterable,
   Coroutine,
@@ -49,15 +48,17 @@ class RestYhteys(SivutettuHaku, AsynkroninenYhteys):
       Muuten: palautetaan asynkroninen iteraattori kaikkien hakuehtoihin
       (`kwargs`) täsmäävien tietueiden hakemiseksi.
       '''
-      # pylint: disable=no-member
+      # pylint: disable=invalid-overridden-method, no-member
       if pk is not None:
         return super().nouda(pk=pk, **params)
+
       async def _nouda():
         async for data in self.yhteys.tuota_sivutettu_data(
           self.Meta.rajapinta,
           params=params,
         ):
           yield self._tulkitse_saapuva(data)
+
       return _nouda()
       # def nouda
 
