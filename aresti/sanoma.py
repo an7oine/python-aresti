@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import Field, fields
+from dataclasses import Field, fields, is_dataclass
 import enum
 import functools
 from typing import (
@@ -13,7 +13,7 @@ from typing import (
   Union,
 )
 
-from .tyokalut import ei_syotetty, luokkamaare
+from .tyokalut import Valinnainen, ei_syotetty, luokkamaare
 
 
 class RestKentta:
@@ -81,6 +81,10 @@ class RestSanoma(RestKentta):
   # )
   # <sanoma-avain>: <rest-avain>
   _rest: ClassVar[dict]
+
+  # Valinnainen, osittainen muunnostaulukko, jota sovelletaan ensisijaisesti
+  # ennen `_rest`-muunnostaulukkoa.
+  rest_muunnos: ClassVar[Valinnainen[dict]] = ei_syotetty
 
   @classmethod
   def kopioi(cls, lahde: RestSanoma):
@@ -174,14 +178,31 @@ class RestSanoma(RestKentta):
     '''
     Muodosta `_rest`-sanakirja automaattisesti sisempien
     RestKenttien osalta.
+
+    Huomioidaan mahdollinen `rest_muunnos`-kuvaus sekä pelkkien kentän
+    nimien osalta, jolloin huomioidaan lisäksi `__poimi_rest`-toteutuksen
+    tuottama `lahteva, saapuva`-kaksikko että täydellisten muunnosten
+    (kolmikko muotoa `nimi, lahteva, saapuva`) osalta.
     '''
     # pylint: disable=no-self-argument
+    if not is_dataclass(cls):
+      raise TypeError(f'Sanoma ei ole dataclass-tyyppinen: {cls!r}!')
     def _kentat():
       tyypit = get_type_hints(cls)
+      muunnos = cls.rest_muunnos or {}
       for kentta in fields(cls):
         tyyppi = tyypit.get(kentta.name, kentta.type)
+        muunnettu_nimi = kentta.name
+        if (muunnettu := muunnos.get(kentta.name)) is not None:
+          if isinstance(muunnettu, str):
+            muunnettu_nimi = muunnettu
+          else:
+            yield kentta.name, muunnettu
+            continue
         if (lahteva_saapuva := cls.__poimi_rest(tyyppi)) is not None:
-          yield kentta.name, (kentta.name, *lahteva_saapuva)
+          yield kentta.name, (muunnettu_nimi, *lahteva_saapuva)
+        elif muunnettu_nimi != kentta.name:
+          yield kentta.name, muunnettu_nimi
         # for kentta in fields
       # def _kentat
     return dict(_kentat())
