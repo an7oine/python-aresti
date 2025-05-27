@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 import pprint
 from typing import Any, Optional
@@ -30,7 +31,7 @@ class AsynkroninenYhteys:
   >>>   data = await yhteys.nouda_data('/abc/def')
   '''
 
-  palvelin: str = None
+  palvelin: Optional[str] = None
   debug: bool = False
   mittaa_pyynnot: Optional[bool] = None
 
@@ -55,6 +56,7 @@ class AsynkroninenYhteys:
     # async def __aenter__
 
   async def __aexit__(self, *exc_info):
+    # pylint: disable=attribute-defined-outside-init
     async with self._istunto_lukitus:
       if not (istunto_avoinna := self._istunto_avoinna - 1):
         await self._istunto.close()
@@ -149,6 +151,16 @@ class AsynkroninenYhteys:
       return await sanoma.text()
     # async def _tulkitse_sanoma
 
+  @property
+  @asynccontextmanager
+  async def _pyynto(self):
+    if not self._istunto_avoinna:
+      raise ValueError('Istuntoa ei ole avattu (async with ...)!')
+    if not self.palvelin:
+      raise ValueError('Palvelinta ei ole asetettu!')
+    yield
+    # async def _pyynto
+
   @kaanna_poikkeus
   @mittaa
   async def nouda_otsakkeet(
@@ -158,9 +170,8 @@ class AsynkroninenYhteys:
     headers: Optional[dict[str, str]] = None,
     **kwargs
   ) -> Any:
-    async with self._istunto.head(
+    async with self._pyynto, self._istunto.head(
       self.palvelin + polku,
-      #params=kwargs,
       headers=await self._pyynnon_otsakkeet(
         metodi='HEAD',
         polku=polku,
@@ -183,9 +194,8 @@ class AsynkroninenYhteys:
     headers: Optional[dict[str, str]] = None,
     **kwargs
   ) -> Any:
-    async with self._istunto.options(
+    async with self._pyynto, self._istunto.options(
       self.palvelin + polku,
-      #params=kwargs,
       headers=await self._pyynnon_otsakkeet(
         metodi='OPTIONS',
         polku=polku,
@@ -207,9 +217,8 @@ class AsynkroninenYhteys:
     headers: Optional[dict[str, str]] = None,
     **kwargs
   ) -> Any:
-    async with self._istunto.get(
+    async with self._pyynto, self._istunto.get(
       self.palvelin + polku if suhteellinen else polku,
-      #params=kwargs,
       headers=await self._pyynnon_otsakkeet(
         metodi='GET',
         polku=polku,
@@ -232,9 +241,8 @@ class AsynkroninenYhteys:
     **kwargs
   ) -> Any:
     data = await self.muodosta_data(data)
-    async with self._istunto.post(
+    async with self._pyynto, self._istunto.post(
       self.palvelin + polku,
-      #params=kwargs,
       headers=await self._pyynnon_otsakkeet(
         metodi='POST',
         polku=polku,
@@ -259,9 +267,8 @@ class AsynkroninenYhteys:
     **kwargs
   ) -> Any:
     data = await self.muodosta_data(data)
-    async with self._istunto.patch(
+    async with self._pyynto, self._istunto.patch(
       self.palvelin + polku,
-      #params=kwargs,
       headers=await self._pyynnon_otsakkeet(
         metodi='PATCH',
         polku=polku,
@@ -284,9 +291,8 @@ class AsynkroninenYhteys:
     headers: Optional[dict[str, str]] = None,
     **kwargs
   ) -> Any:
-    async with self._istunto.delete(
+    async with self._pyynto, self._istunto.delete(
       self.palvelin + polku,
-      #params=kwargs,
       headers=await self._pyynnon_otsakkeet(
         metodi='DELETE',
         polku=polku,
