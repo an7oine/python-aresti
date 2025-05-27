@@ -179,6 +179,38 @@ class luokkamaare:
   # class luokkamaare
 
 
+class sisaluokka(functools.cached_property):
+  '''
+  Sisäluokka, joka yksilöidään pyydettäessä (ensimmäisen kerran)
+  ulomman luokan oliolle.
+
+  Käyttö seuraavasti:
+  >>> from __future__ import annotations
+  >>> from dataclasses import dataclass
+  >>> class Ulompi:
+  ...   @sisaluokka
+  ...   @dataclass
+  ...   class Sisempi:
+  ...     ulompi: Ulompi
+  >>>
+  >>> Ulompi.Sisempi
+  ... __main__.Ulompi.Sisempi
+  >>>
+  >>> Ulompi().Sisempi
+  ... Ulompi.Sisempi(ulompi=<__main__.Ulompi object at ...>)
+  >>> assert (ulompi := Ulompi()).Sisempi.ulompi is ulompi
+  '''
+  # pylint: disable=invalid-name
+
+  def __get__(self, instance, cls=None):
+    if instance is not None:
+      return super().__get__(instance)
+    return self.func
+    # def __get__
+
+  # class sisaluokka
+
+
 @dataclass(kw_only=True)
 class periyta:
   '''
@@ -228,9 +260,9 @@ class periyta:
     return ret
     # def __new__
 
-  def __get__(self, _self, cls=None):
+  def __get__(self, instance, cls=None):
     @functools.wraps(self.periytettava, updated=())
-    class periytetty(self.periytettava, cls or type(_self)):
+    class periytetty(self.periytettava, cls or type(instance)):
       pass
     if any(is_dataclass(kls) for kls in periytetty.__bases__):
       periytetty = dataclass(**self.kwargs)(periytetty)
