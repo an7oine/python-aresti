@@ -118,7 +118,7 @@ class Rajapinta(metaclass=RajapintaMeta):
     )
     # def __call__
 
-  def _tulkitse_saapuva(self, saapuva):
+  def _tulkitse_saapuva(self, saapuva) -> Tuloste:
     ''' Tulkitse saapuvan datan sisältämä sanoma. '''
     if not isinstance(saapuva, Mapping):
       raise TypeError(
@@ -127,12 +127,12 @@ class Rajapinta(metaclass=RajapintaMeta):
     return self.Tuloste.saapuva(saapuva)
     # def _tulkitse_saapuva
 
-  def _tulkitse_lahteva(self, lahteva):
+  def _tulkitse_lahteva(self, lahteva: Syote | Paivitys) -> dict:
     ''' Muodosta lähtevä data sanomalle. '''
     return lahteva.lahteva()
     # def _tulkitse_lahteva
 
-  def nouda_rajapinnasta(
+  async def nouda_rajapinnasta(
     self,
     pk: Valinnainen[Union[str, int]] = ei_syotetty,
     **params,
@@ -142,8 +142,8 @@ class Rajapinta(metaclass=RajapintaMeta):
       rajapinta = self.Meta.rajapinta_pk % {'pk': pk}
     else:
       rajapinta = self.Meta.rajapinta
-    return self.yhteys.nouda_data(rajapinta, params=params)
-    # def nouda_rajapinnasta
+    return await self.yhteys.nouda_data(rajapinta, params=params)
+    # async def nouda_rajapinnasta
 
   async def nouda(self, **params) -> Union[Tuloste, list[Tuloste]]:
     data = await self.nouda_rajapinnasta(**params)
@@ -193,7 +193,7 @@ class Rajapinta(metaclass=RajapintaMeta):
   async def muuta(
     self,
     pk: Union[str, int],
-    data: Valinnainen[Syote] = ei_syotetty,
+    data: Valinnainen[Paivitys] = ei_syotetty,
     **kwargs
   ):
     assert self.Meta.rajapinta_pk
@@ -202,7 +202,7 @@ class Rajapinta(metaclass=RajapintaMeta):
         'Anna joko syöte tai `kwargs`.'
       )
     elif kwargs:
-      data = self.Paivitys(**kwargs)
+      data: self.Paivitys = self.Paivitys(**kwargs)
     else:
       assert isinstance(data, RestSanoma), repr(data)
     return self._tulkitse_saapuva(

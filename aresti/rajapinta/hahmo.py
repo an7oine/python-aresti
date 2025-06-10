@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field, fields
-from typing import Any, Optional
+from typing import Any
 
 from aresti.sanoma import RestSanoma
 from aresti.tyokalut import ei_syotetty, Valinnainen
@@ -7,6 +7,8 @@ from aresti.tyokalut import ei_syotetty, Valinnainen
 
 @dataclass(kw_only=True)
 class Hahmo:
+  ''' Sijaishahmo yksittäisen tietueen käsittelyyn rajapinnassa. '''
+
   rajapinta: 'aresti.rajapinta.Rajapinta'
   pk: Valinnainen[Any] = ei_syotetty
   kwargs: dict = field(default_factory=dict)

@@ -1,3 +1,5 @@
+from aresti.tyokalut import ei_syotetty, Valinnainen
+
 from . import Rajapinta
 
 
@@ -6,8 +8,8 @@ class SuodatettuRajapinta(Rajapinta):
 
   Suodatus: type
 
-  def nouda(self, **suodatusehdot):
-    if pk := suodatusehdot.pop('pk', None):
+  def nouda(self, pk: Valinnainen = ei_syotetty, **suodatusehdot):
+    if pk is not ei_syotetty:
       return super().nouda(pk=pk)
     return super().nouda(
       **self.Suodatus(**suodatusehdot).lahteva(),
@@ -22,8 +24,8 @@ class LuettelomuotoinenRajapinta(SuodatettuRajapinta):
   Sivutusta ei käytetä, tulokset saadaan suoraan luettelona.
   '''
 
-  def nouda(self, pk=None, **suodatusehdot):
-    if pk is not None:
+  def nouda(self, pk: Valinnainen = ei_syotetty, **suodatusehdot):
+    if pk is not ei_syotetty:
       return super().nouda(pk=pk, **suodatusehdot)
 
     async def _nouda():
@@ -42,8 +44,8 @@ class YksittaisenTietueenRajapinta(Rajapinta):
   Vain yksittäistä tietuetta voidaan käsitellä.
   '''
 
-  async def nouda(self, pk=None, **params):
-    if pk is None:
+  async def nouda(self, pk: Valinnainen = ei_syotetty, **params):
+    if pk is ei_syotetty:
       raise self.ToimintoEiSallittu
     return await super().nouda(pk=pk, **params)
     # def nouda
@@ -64,4 +66,3 @@ class VainLukuRajapinta(Rajapinta):
     raise self.ToimintoEiSallittu
 
   # class VainLukuRajapinta
-
