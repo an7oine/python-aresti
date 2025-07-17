@@ -37,7 +37,7 @@ class JsonYhteys(AsynkroninenYhteys):
     data: Any
   ) -> bytes:
     ''' Muodosta JSON-data sisällön mukaan. '''
-    return json.dumps(data)
+    return json.dumps(data).encode()
     # async def _tulkitse_data
 
   # class JsonYhteys
