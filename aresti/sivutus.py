@@ -76,12 +76,13 @@ class SivutettuHaku(AsynkroninenYhteys):
     self,
     polku: str,
     *,
-    params: dict = None,
+    params: Optional[dict] = None,  # type: ignore
     **kwargs
   ) -> AsyncIterable:
     ''' Tuota sivutettu data kaikilta sivuilta. '''
+    assert isinstance(self.palvelin, str)
     osoite = self.palvelin + polku
-    params = params or {}
+    params: dict = params or {}
     while True:
       sivullinen = await self.nouda_data(
         osoite,
@@ -111,20 +112,30 @@ class SivutettuHaku(AsynkroninenYhteys):
             # if tuloksia_kaikkiaan := sivullinen.get
           # if self.valittu_sivu_avain
 
+        if self.valittu_sivu_avain \
+        and self.seuraava_sivu_avain:
+          # Sivu valitaan kiinteän parametrin avulla, käytetään annettua,
+          # seuraavaa sivua.
+          if seuraava_sivu := sivullinen[self.seuraava_sivu_avain]:
+            params[self.valittu_sivu_avain] = seuraava_sivu
+          else:
+            # Tämä oli viimeinen sivu, poistutaan.
+            break
+
         # Päättele seuraavan sivun URL.
-        if self.seuraava_sivu_avain:
+        elif self.seuraava_sivu_avain:
           # Paluusanoma sisältää linkin seuraavalle sivulle, seurataan.
           osoite = sivullinen.get(self.seuraava_sivu_avain)
           # Ei lisätä parametrejä uudelleen `next`-sivun
           # osoitteeseen.
-          params = None
+          params = {}
 
         elif self.valittu_sivu_avain \
         and sivullinen[self.tulokset_avain]:
           # Sivu valitaan kiinteän parametrin avulla: kasvatetaan
           # sivunumeroa, kunnes saadaan tyhjä sivu.
           params[self.valittu_sivu_avain] = (
-            int(sivu or self.ensimmainen_sivu) + 1
+            int(sivu or self.ensimmainen_sivu) + 1  # pyright: ignore
           )
 
         else:
