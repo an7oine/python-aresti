@@ -8,7 +8,7 @@ from .yhteys import AsynkroninenYhteys
 @dataclass(kw_only=True)
 class Tunnistautuminen(AsynkroninenYhteys):
 
-  tunnistautuminen: dict = field(init=False)
+  tunnistautuminen: dict = field(init=False, repr=False)
 
   def __post_init__(self):
     try:
@@ -35,7 +35,7 @@ class Tunnistautuminen(AsynkroninenYhteys):
 class KayttajaSalasanaTunnistautuminen(Tunnistautuminen):
 
   kayttajatunnus: str
-  salasana: str = ''
+  salasana: str = field(default='', repr=False)
 
   def __post_init__(self):
     super().__post_init__()
@@ -50,7 +50,7 @@ class KayttajaSalasanaTunnistautuminen(Tunnistautuminen):
 @dataclass(kw_only=True)
 class AvainTunnistautuminen(Tunnistautuminen):
 
-  avain: str
+  avain: str = field(repr=False)
 
   def __post_init__(self):
     super().__post_init__()

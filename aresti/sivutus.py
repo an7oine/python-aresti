@@ -68,7 +68,8 @@ class SivutettuHaku(AsynkroninenYhteys):
   # Oletustoteutus tulostaa (print) haun edistymisen silloin, kun
   # `tulosta_sivutus_edistyminen` on tosi.
   sivutetun_haun_edistyminen: SivutetunHaunEdistyminen = field(
-    default=OletusEdistyminen()
+    default=OletusEdistyminen(),
+    repr=False,
   )
 
   async def tuota_sivutettu_data(
