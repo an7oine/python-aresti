@@ -178,14 +178,16 @@ class Rajapinta(metaclass=RajapintaMeta):
       )
     elif kwargs:
       data = self.Syote(**kwargs)
+    elif data is ei_syotetty:
+      pass
     elif not isinstance(data, RestSanoma) and isinstance(data, Iterable):
       return [await self.lisaa(alkio) for alkio in data]
-    else:
-      assert isinstance(data, RestSanoma), repr(data)
+    elif not isinstance(data, RestSanoma):
+      raise TypeError(f'not isinstance({data!r}, RestSanoma)')
     return self._tulkitse_saapuva(
       await self.yhteys.lisaa_data(
         self.Meta.rajapinta,
-        self._tulkitse_lahteva(data) if data is not None else {}
+        self._tulkitse_lahteva(data) if data is not ei_syotetty else {}
       )
     )
     # async def lisaa
@@ -202,13 +204,15 @@ class Rajapinta(metaclass=RajapintaMeta):
         'Anna joko syöte tai `kwargs`.'
       )
     elif kwargs:
-      data: self.Paivitys = self.Paivitys(**kwargs)
-    else:
-      assert isinstance(data, RestSanoma), repr(data)
+      data = self.Paivitys(**kwargs)
+    elif data is ei_syotetty:
+      pass
+    elif not isinstance(data, RestSanoma):
+      raise TypeError(f'not isinstance({data!r}, RestSanoma)')
     return self._tulkitse_saapuva(
       await self.yhteys.muuta_data(
         self.Meta.rajapinta_pk % {'pk': pk},
-        self._tulkitse_lahteva(data) if data is not None else {}
+        self._tulkitse_lahteva(data) if data is not ei_syotetty else {}
       )
     )
     # async def muuta
