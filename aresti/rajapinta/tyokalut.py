@@ -56,6 +56,10 @@ class YksittaisenTietueenRajapinta(Rajapinta):
 class VainLukuRajapinta(Rajapinta):
   ''' Vain luku -tyyppinen rajapinta: ei C/U/D-operaatioita. '''
 
+  class Hahmo(Rajapinta.Hahmo):
+    def __await__(self):
+      return self.rajapinta.nouda(**self.kwargs).__await__()
+
   async def lisaa(self, *args, **kwargs):
     raise self.ToimintoEiSallittu
 

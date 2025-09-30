@@ -145,12 +145,20 @@ class Rajapinta(metaclass=RajapintaMeta):
     return await self.yhteys.nouda_data(rajapinta, params=params)
     # async def nouda_rajapinnasta
 
-  async def nouda(self, **params) -> Union[Tuloste, list[Tuloste]]:
+  async def nouda(self, **params) -> Valinnainen[
+    Union[Tuloste, list[Tuloste]]
+  ]:
     data = await self.nouda_rajapinnasta(**params)
-    if isinstance(data, Mapping):
+    if data is None:
+      return ei_syotetty
+    elif isinstance(data, Mapping):
       return self._tulkitse_saapuva(data)
-    else:
+    elif isinstance(data, Iterable):
       return [self._tulkitse_saapuva(d) for d in data]
+    else:
+      raise TypeError(
+        f'Paluusanoman sisältö on tuntematonta tyyppiä: {data!r}'
+      )
     # async def nouda
 
   async def otsakkeet(self, **params):
