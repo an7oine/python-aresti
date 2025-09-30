@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import AsyncIterable, Optional, Protocol
+from typing import AsyncIterable, Coroutine, Optional, Protocol, Union
 
-from .tyokalut import mittaa, Rutiini
+from aresti.rest import RestYhteys
+
+from .tyokalut import ei_syotetty, luokkamaare, mittaa, Rutiini, Valinnainen
 from .yhteys import AsynkroninenYhteys
 
 
@@ -49,7 +51,8 @@ class OletusEdistyminen(SivutetunHaunEdistyminen, Rutiini):
 
 
 @dataclass(kw_only=True)
-class SivutettuHaku(AsynkroninenYhteys):
+class SivutettuYhteys(RestYhteys):
+  ''' Saateluokka Rest-rajapintaan, joka käyttää tulosten sivutusta. '''
 
   # Avaimet, joilla tulokset ja seuraava sivu poimitaan sivutetusta datasta.
   tulokset_avain: str = 'results'
@@ -71,6 +74,35 @@ class SivutettuHaku(AsynkroninenYhteys):
     default=OletusEdistyminen(),
     repr=False,
   )
+
+  class Rajapinta(RestYhteys.Rajapinta):
+
+    def nouda(
+      self,
+      pk: Valinnainen[Union[str, int]] = ei_syotetty,
+      **params
+    ) -> Union[Coroutine, AsyncIterable[Rajapinta.Tuloste]]:
+      '''
+      Kun `pk` on annettu: palautetaan alirutiini vastaavan
+      tietueen hakemiseksi.
+      Muuten: palautetaan asynkroninen iteraattori kaikkien hakuehtoihin
+      (`kwargs`) täsmäävien tietueiden hakemiseksi.
+      '''
+      # pylint: disable=invalid-overridden-method, no-member
+      if pk is not ei_syotetty:
+        return super().nouda(pk=pk, **params)
+
+      async def _nouda():
+        async for data in self.yhteys.tuota_sivutettu_data(
+          self.Meta.rajapinta,
+          params=params,
+        ):
+          yield self._tulkitse_saapuva(data)
+
+      return _nouda()
+      # def nouda
+
+    # class Rajapinta
 
   async def tuota_sivutettu_data(
     self,
@@ -165,4 +197,4 @@ class SivutettuHaku(AsynkroninenYhteys):
     return data
     # async def nouda_sivutettu_data
 
-  # class SivutettuHaku
+  # class SivutettuYhteys

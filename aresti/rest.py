@@ -1,20 +1,13 @@
 from __future__ import annotations
 
-from typing import (
-  AsyncIterable,
-  Coroutine,
-  Union,
-)
-
 from .rajapinta import Rajapinta
-from .sivutus import SivutettuHaku
-from .tyokalut import ei_syotetty, luokkamaare, Valinnainen
+from .tyokalut import luokkamaare, Valinnainen
 from .yhteys import AsynkroninenYhteys
 
 
-class RestYhteys(SivutettuHaku, AsynkroninenYhteys):
+class RestYhteys(AsynkroninenYhteys):
   '''
-  REST-yhteys: tulosten sivutus ja erilliset rajapinnat.
+  REST-yhteys: erilliset rajapinnat.
 
   Lisätty periytetty (REST-) `Rajapinta`-luokka.
   '''
@@ -35,31 +28,6 @@ class RestYhteys(SivutettuHaku, AsynkroninenYhteys):
           return cls.rajapinta + '/%(pk)s'
 
       # class Meta
-
-    def nouda(
-      self,
-      pk: Valinnainen[Union[str, int]] = ei_syotetty,
-      **params
-    ) -> Union[Coroutine, AsyncIterable[Rajapinta.Tuloste]]:
-      '''
-      Kun `pk` on annettu: palautetaan alirutiini vastaavan
-      tietueen hakemiseksi.
-      Muuten: palautetaan asynkroninen iteraattori kaikkien hakuehtoihin
-      (`kwargs`) täsmäävien tietueiden hakemiseksi.
-      '''
-      # pylint: disable=invalid-overridden-method, no-member
-      if pk is not ei_syotetty:
-        return super().nouda(pk=pk, **params)
-
-      async def _nouda():
-        async for data in self.yhteys.tuota_sivutettu_data(
-          self.Meta.rajapinta,
-          params=params,
-        ):
-          yield self._tulkitse_saapuva(data)
-
-      return _nouda()
-      # def nouda
 
     # class Rajapinta
 
