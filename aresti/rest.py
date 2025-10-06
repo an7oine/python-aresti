@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from .rajapinta import Rajapinta
-from .tyokalut import luokkamaare, Valinnainen
+from .tyokalut import luokkamaare
 from .yhteys import AsynkroninenYhteys
 
 

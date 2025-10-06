@@ -1,12 +1,13 @@
-from __future__ import annotations
-
-from dataclasses import Field, fields, is_dataclass
+from dataclasses import fields, is_dataclass
 import enum
 import functools
 from typing import (
   Any,
   Callable,
   ClassVar,
+  Mapping,
+  Optional,
+  Self,
   get_args,
   get_origin,
   get_type_hints,
@@ -22,7 +23,7 @@ class RestKentta:
   automaattisesti saapuessa ja lähtiessä.
   '''
 
-  def lahteva(self):
+  def lahteva(self) -> Any:
     return self
 
   @classmethod
@@ -87,9 +88,13 @@ class RestSanoma(RestKentta):
   rest_muunnos: ClassVar[Valinnainen[dict]] = ei_syotetty
 
   @classmethod
-  def kopioi(cls, lahde: RestSanoma):
+  def kopioi(cls, lahde: Self):
     ''' Kopioi yhteensopivat (samannimiset) kentät lähteestä. '''
-    lahteen_kentat: tuple[str] = tuple(
+    if not is_dataclass(cls):
+      raise TypeError(f'Sanoma ei ole dataclass-tyyppinen: {cls!r}!')
+    elif not is_dataclass(lahde):
+      raise TypeError(f'Sanoma ei ole dataclass-tyyppinen: {lahde!r}!')
+    lahteen_kentat: tuple[str, ...] = tuple(
       kentta.name for kentta in fields(lahde)
     )
     return cls(**{
@@ -100,7 +105,7 @@ class RestSanoma(RestKentta):
     # def kopioi
 
   @classmethod
-  def __poimi_rest(cls, tyyppi: Any) -> tuple[Callable, Callable]:
+  def __poimi_rest(cls, tyyppi: Any) -> Optional[tuple[Callable, Callable]]:
     lahde = get_origin(tyyppi)
     if isinstance(lahde or tyyppi, type) \
     and issubclass(lahde or tyyppi, RestKentta):
@@ -187,6 +192,7 @@ class RestSanoma(RestKentta):
     # pylint: disable=no-self-argument
     if not is_dataclass(cls):
       raise TypeError(f'Sanoma ei ole dataclass-tyyppinen: {cls!r}!')
+
     def _kentat():
       tyypit = get_type_hints(cls)
       muunnos = cls.rest_muunnos or {}
@@ -208,13 +214,15 @@ class RestSanoma(RestKentta):
     return dict(_kentat())
     # def _rest
 
-  def lahteva(self):
+  def lahteva(self) -> Optional[dict[str, Any]]:
     '''
     Muunnetaan self-sanoman sisältö REST-sanakirjaksi
     `self._rest`-muunnostaulun mukaisesti.
     '''
     if self is None:
       return None
+    elif not is_dataclass(self):
+      raise TypeError(f'Sanoma ei ole dataclass-tyyppinen: {self!r}!')
     return {
       muunnettu_avain: muunnos(arvo)
       for arvo, muunnettu_avain, muunnos in (
@@ -234,13 +242,17 @@ class RestSanoma(RestKentta):
     # def lahteva
 
   @classmethod
-  def saapuva(cls, saapuva):
+  def saapuva(cls, saapuva: Mapping[str, Any]) -> Self:
     '''
     Muunnetaan saapuvan REST-sanakirjan sisältö `cls`-olioksi
     `cls._rest`-muunnostaulun mukaisesti.
     '''
+    if not is_dataclass(cls):
+      raise TypeError(f'Sanoma ei ole dataclass-tyyppinen: {cls!r}!')
     if saapuva is None:
       return None
+    elif not isinstance(saapuva, Mapping):
+      raise TypeError(repr(saapuva))
     return cls(**{
       avain: muunnos(saapuva[muunnettu_avain])
       for avain, muunnettu_avain, muunnos in (

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import AsyncIterable, Coroutine, Optional, Protocol, Union
 
@@ -81,7 +79,7 @@ class SivutettuYhteys(RestYhteys):
       self,
       pk: Valinnainen[Union[str, int]] = ei_syotetty,
       **params
-    ) -> Union[Coroutine, AsyncIterable[Rajapinta.Tuloste]]:
+    ) -> Union[Coroutine, AsyncIterable[RestYhteys.Rajapinta.Tuloste]]:
       '''
       Kun `pk` on annettu: palautetaan alirutiini vastaavan
       tietueen hakemiseksi.

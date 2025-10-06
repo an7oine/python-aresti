@@ -185,13 +185,12 @@ class sisaluokka(functools.cached_property):
   ulomman luokan oliolle.
 
   Käyttö seuraavasti:
-  >>> from __future__ import annotations
   >>> from dataclasses import dataclass
   >>> class Ulompi:
   ...   @sisaluokka
   ...   @dataclass
   ...   class Sisempi:
-  ...     ulompi: Ulompi
+  ...     ulompi: 'Ulompi'
   >>>
   >>> Ulompi.Sisempi
   ... __main__.Ulompi.Sisempi

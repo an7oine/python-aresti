@@ -1,9 +1,7 @@
-from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Any, Iterable, Union
+from typing import Any, Iterable, Optional, Union
 
 from .hahmo import Hahmo
 from ..yhteys import AsynkroninenYhteys
@@ -118,7 +116,7 @@ class Rajapinta(metaclass=RajapintaMeta):
     )
     # def __call__
 
-  def _tulkitse_saapuva(self, saapuva) -> Tuloste:
+  def _tulkitse_saapuva(self, saapuva: Mapping) -> Optional[Tuloste]:
     ''' Tulkitse saapuvan datan sisältämä sanoma. '''
     if not isinstance(saapuva, Mapping):
       raise TypeError(
@@ -127,7 +125,7 @@ class Rajapinta(metaclass=RajapintaMeta):
     return self.Tuloste.saapuva(saapuva)
     # def _tulkitse_saapuva
 
-  def _tulkitse_lahteva(self, lahteva: Syote | Paivitys) -> dict:
+  def _tulkitse_lahteva(self, lahteva: RestSanoma) -> Optional[dict]:
     ''' Muodosta lähtevä data sanomalle. '''
     return lahteva.lahteva()
     # def _tulkitse_lahteva
@@ -136,7 +134,7 @@ class Rajapinta(metaclass=RajapintaMeta):
     self,
     pk: Valinnainen[Union[str, int]] = ei_syotetty,
     **params,
-  ) -> list[Tuloste]:
+  ) -> Optional[Union[Mapping, Iterable]]:
     if pk is not ei_syotetty:
       assert self.Meta.rajapinta_pk
       rajapinta = self.Meta.rajapinta_pk % {'pk': pk}
