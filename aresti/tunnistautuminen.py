@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import ClassVar, Literal
 
 from aiohttp import BasicAuth
 
@@ -52,10 +53,12 @@ class AvainTunnistautuminen(Tunnistautuminen):
 
   avain: str = field(repr=False)
 
+  avaimen_tyyppi: ClassVar[Literal['Token', 'Bearer']] = 'Token'
+
   def __post_init__(self):
     super().__post_init__()
     self.tunnistautuminen = {
-      'Authorization': f'Token {self.avain}'
+      'Authorization': f'{self.avaimen_tyyppi} {self.avain}'
     }
     # def __post_init__
 
