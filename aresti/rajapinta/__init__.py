@@ -72,6 +72,10 @@ class Rajapinta(metaclass=RajapintaMeta):
     # def Paivitys
 
   @dataclass(kw_only=True)
+  class Poisto(RestSanoma):
+    ''' Tietorakenne olemassaolevan tietueen poistamiseen. '''
+
+  @dataclass(kw_only=True)
   class Tuloste(RestSanoma):
     ''' Saapuvan datan tietorakenne. '''
 
@@ -225,12 +229,25 @@ class Rajapinta(metaclass=RajapintaMeta):
 
   async def tuhoa(
     self,
-    pk: Union[str, int],
+    pk: Valinnainen[Union[str, int]] = ei_syotetty,
+    data: Valinnainen[Poisto] = ei_syotetty,
+    **kwargs
   ):
-    assert self.Meta.rajapinta_pk
+    assert self.Meta.rajapinta_pk if pk else self.Meta.rajapinta
+    if data is not ei_syotetty and kwargs:
+      raise ValueError(
+        'Anna joko syöte tai `kwargs`.'
+      )
+    elif kwargs:
+      data = self.Poisto(**kwargs)
+    elif data is ei_syotetty:
+      pass
+    elif not isinstance(data, RestSanoma):
+      raise TypeError(f'not isinstance({data!r}, RestSanoma)')
     return self._tulkitse_saapuva(
       await self.yhteys.tuhoa_data(
-        self.Meta.rajapinta_pk % {'pk': pk},
+        self.Meta.rajapinta_pk % {'pk': pk} if pk else self.Meta.rajapinta,
+        self._tulkitse_lahteva(data) if data is not ei_syotetty else None,
       )
     )
     # async def tuhoa

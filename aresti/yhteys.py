@@ -287,10 +287,12 @@ class AsynkroninenYhteys:
   async def tuhoa_data(
     self,
     polku: str,
+    data: Optional[Any] = None,
     *,
     headers: Optional[dict[str, str]] = None,
     **kwargs
   ) -> Any:
+    data = await self.muodosta_data(data) if data is not None else None
     async with self._pyynto, self._istunto.delete(
       self.palvelin + polku,
       headers=await self._pyynnon_otsakkeet(
@@ -298,6 +300,7 @@ class AsynkroninenYhteys:
         polku=polku,
         **headers or {},
       ),
+      **({'data': data} if data is not None else {}),
       **kwargs,
     ) as sanoma:
       return await self._tulkitse_sanoma('DELETE', sanoma)
