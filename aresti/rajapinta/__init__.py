@@ -120,8 +120,10 @@ class Rajapinta(metaclass=RajapintaMeta):
     )
     # def __call__
 
-  def _tulkitse_saapuva(self, saapuva: Mapping) -> Optional[Tuloste]:
+  def _tulkitse_saapuva(self, saapuva: Optional[Mapping]) -> Optional[Tuloste]:
     ''' Tulkitse saapuvan datan sisältämä sanoma. '''
+    if saapuva is None:
+      return None
     if not isinstance(saapuva, Mapping):
       raise TypeError(
         f'Noudettu data ei ole kuvaus: {type(saapuva)!r}!'

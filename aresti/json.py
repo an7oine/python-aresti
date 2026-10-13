@@ -26,6 +26,8 @@ class JsonYhteys(AsynkroninenYhteys):
     sanoma: aiohttp.ClientResponse
   ) -> Any:
     ''' Tulkitse data JSON-muodossa. '''
+    if sanoma.status == 204:
+      return None
     if sanoma.content_type.split('+')[0].split(';')[0] \
     not in self.json_sisalto:
       return await super().tulkitse_data(sanoma)
